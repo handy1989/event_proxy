@@ -1,3 +1,5 @@
+#include "logger.h"
+
 #include <event2/listener.h>
 #include <event2/bufferevent.h>
 #include <event2/buffer.h>
@@ -22,9 +24,10 @@ echo_read_cb(struct bufferevent *bev, void *ctx)
         {
             char* request_line = evbuffer_readln(input, &line_len, EVBUFFER_EOL_CRLF_STRICT);
             if (!request_line) {
+                LOG_DEBUG("break");
                 break;
             } else {
-                printf("readline:%s\n", request_line);
+                LOG_DEBUG("readline:" << request_line);
                 free(request_line);
             }
 
@@ -39,6 +42,7 @@ echo_event_cb(struct bufferevent *bev, short events, void *ctx)
         if (events & (BEV_EVENT_EOF | BEV_EVENT_ERROR)) {
                 bufferevent_free(bev);
         }
+        LOG_DEBUG("echo_event_cb finished");
 }
 
 static void
@@ -54,6 +58,7 @@ accept_conn_cb(struct evconnlistener *listener,
         bufferevent_setcb(bev, echo_read_cb, NULL, echo_event_cb, NULL);
 
         bufferevent_enable(bev, EV_READ|EV_WRITE);
+        LOG_DEBUG("accepted");
 }
 
 static void
