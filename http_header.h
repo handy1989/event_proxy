@@ -1,9 +1,14 @@
 #ifndef _HTTP_HEADER_H_
 #define _HTTP_HEADER_H_
-#include <string>
 
-/* recognized or "known" header fields; @?@ add more! */
-typedef enum {
+#include <stdint.h>
+
+#include <string>
+#include <vector>
+
+
+enum http_hdr_type
+{
     HDR_BAD_HDR = -1,
     HDR_ACCEPT = 0,
     HDR_ACCEPT_CHARSET,
@@ -76,10 +81,10 @@ typedef enum {
     HDR_FRONT_END_HTTPS,
     HDR_OTHER,
     HDR_ENUM_END
-} http_hdr_type;
+};
 
-/* possible types for http header fields */
-typedef enum {
+enum field_type
+{
     ftInvalid = HDR_ENUM_END,	/* to catch nasty errors with hdr_id<->fld_type clashes */
     ftInt,
     ftInt64,
@@ -91,15 +96,17 @@ typedef enum {
     ftPRange,
     ftPSc,
     ftDate_1123_or_ETag
-} field_type;
+};
 
-class HttpHeaderEntry
+struct HttpHeaderFieldAttrs
 {
+    const char *name;
+    http_hdr_type id;
+    field_type type;
+};
 
-public:
-    HttpHeaderEntry(http_hdr_type id, const char *name, const char *value);
-    ~HttpHeaderEntry();
-    static HttpHeaderEntry *Parse(const char *field_start, const char *field_end);
+struct HttpHeaderEntry
+{
     http_hdr_type id;
     std::string name;
     std::string value;
@@ -109,10 +116,11 @@ class HttpHeader
 {
 
 public:
-    HttpHeader();
-    ~HttpHeader();
-    int Parse(const char *header_start, const char *header_end);
-    Vector<HttpHeaderEntry *> entries;
+    HttpHeader() {}
+    ~HttpHeader() {}
+    int32_t Parse(char* line);
+
+    std::vector<HttpHeaderEntry> entries;
 };
 
 #endif // _HTTP_HEADER_H_

@@ -75,3 +75,8 @@ static const HttpHeaderFieldAttrs HeadersAttrs[] =
         {"Other:", HDR_OTHER, ftStr}
 };
 
+int32_t HttpHeader::Parse(char* line)
+{
+    return 0;
+}
+
