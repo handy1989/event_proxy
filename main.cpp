@@ -29,9 +29,14 @@ static void echo_write_cb(struct bufferevent *bev, void *ctx)
     {
         string rsp = "hello world";
         evbuffer_add_printf(output, "HTTP/1.1 200 OK\r\nContent-Length: %lu\r\n\r\n%s", rsp.size(), rsp.c_str());
+        buffer_context->read_header_finished = false;
+
         LOG_INFO("response to fd:" << buffer_context->http_request.fd);
-        bufferevent_flush(bev, EV_WRITE, BEV_FINISHED);
+    }
+    else
+    {
         bufferevent_disable(bev, EV_WRITE);
+        LOG_INFO("disable write");
     }
     LOG_INFO("echo_write_cb finished");
 
@@ -60,6 +65,10 @@ static void echo_read_cb(struct bufferevent *bev, void *ctx)
                 LOG_DEBUG("parse first line:" << request_line);
                 buffer_context->http_request.ParseFirstLine(request_line);
                 buffer_context->first_line_parsed = true;
+
+                LOG_DEBUG("parsed first req, method:" << buffer_context->http_request.method
+                        << " url:" << buffer_context->http_request.url
+                        << " http_version:" << buffer_context->http_request.http_version);
             }
             else if (strlen(request_line) == 0)
             {

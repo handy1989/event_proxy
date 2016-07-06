@@ -14,7 +14,9 @@ all:test
 %.o:%.cpp
 	g++ -o $@ -c $< ${INCLUDE}  ${CPPFLAGS}
 
-test:global.cpp http_msg.cpp http_header.cpp http_request.cpp main.cpp 
+SOURCE = main.cpp global.cpp http_msg.cpp http_header.cpp http_request.cpp utility.cpp
+
+test: $(SOURCE)
 	g++ -o $@ $^ ${INCLUDE} ${LIB} ${CPPFLAGS}
 
 clean:
