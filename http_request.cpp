@@ -65,5 +65,5 @@ int32_t HttpRequest::ParseFirstLine(char* line)
 
 int32_t HttpRequest::ParseHeaderLine(char* line)
 {
-    return 0;
+    return header.Parse(line);
 }

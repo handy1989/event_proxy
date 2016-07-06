@@ -1,4 +1,10 @@
 #include "http_header.h"
+#include "utility.h"
+#include "logger.h"
+
+#include <string>
+
+using std::string;
 
 static const HttpHeaderFieldAttrs HeadersAttrs[] =
 {
@@ -72,11 +78,33 @@ static const HttpHeaderFieldAttrs HeadersAttrs[] =
         {"Surrogate-Capability", HDR_SURROGATE_CAPABILITY, ftStr},
         {"Surrogate-Control", HDR_SURROGATE_CONTROL, ftPSc},
         {"Front-End-Https", HDR_FRONT_END_HTTPS, ftStr},
-        {"Other:", HDR_OTHER, ftStr}
+        {"Other:", HDR_OTHER, ftStr},
+        {NULL, HDR_ENUM_END, ftInvalid}
 };
 
 int32_t HttpHeader::Parse(char* line)
 {
-    return 0;
+    char* begin = FindFirstNotOf(line, " ");
+    if (!begin) return 1;
+    
+    char* end = FindFirstOf(begin, ":");
+    if (!end) return 1;
+
+    HttpHeaderEntry http_header_entry;
+    http_header_entry.name = string(begin, end - begin);
+    http_header_entry.value = string(FindFirstNotOf(end + 1, " "));
+    for (int32_t i = 0; HeadersAttrs[i].name; ++i)
+    {
+        if (strncmp(HeadersAttrs[i].name, begin, end - begin) == 0)
+        {
+            http_header_entry.id = HeadersAttrs[i].id;
+            entries.push_back(http_header_entry);
+            LOG_DEBUG("parse header, name:" << http_header_entry.name
+                    << " value:" << http_header_entry.value);
+            return 0;
+        }
+    }
+    LOG_WARNING("unkown http header:" << line);
+    return 1;
 }
 
