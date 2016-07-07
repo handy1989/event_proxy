@@ -15,8 +15,9 @@ all:test
 	g++ -o $@ -c $< ${INCLUDE}  ${CPPFLAGS}
 
 SOURCE = ${wildcard *.cpp}
+OBJECT = ${patsubst %.cpp, %.o, $(SOURCE)}
 
-test: $(SOURCE)
+test: $(OBJECT)
 	g++ -o $@ $^ ${INCLUDE} ${LIB} ${CPPFLAGS}
 
 clean:
