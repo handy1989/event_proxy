@@ -19,6 +19,7 @@ struct BufferContext
 
     int32_t response_status;
     std::string remote_host;
+    std::string remote_ip;
     int32_t remote_port;
 };
 

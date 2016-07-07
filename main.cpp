@@ -21,6 +21,10 @@
 
 using std::string;
 
+struct evdns_base *dnsbase;
+struct event_base *base;
+struct evconnlistener *listener;
+
 static void echo_write_cb(struct bufferevent *bev, void *ctx)
 {
     struct evbuffer *output = bufferevent_get_output(bev);
@@ -61,15 +65,14 @@ static void echo_write_cb(struct bufferevent *bev, void *ctx)
 
 }
 
-void DnsConnect(BufferContext* buffer_context)
+int32_t ParseHostPort(BufferContext* buffer_context)
 {
     string& url = buffer_context->http_request.url;
-    bool parse_url_error = false;
+    int32_t ret = 1;
     do
     {
         if (url.find("http://", 0, 7) == string::npos)
         {
-            parse_url_error = true;
             LOG_ERROR("http:// not found in url:" << url);
             break;
         }
@@ -77,12 +80,11 @@ void DnsConnect(BufferContext* buffer_context)
         size_t host_end_pos = url.find_first_of("/", host_begin_pos);
         if (host_end_pos == string::npos)
         {
-            parse_url_error = true;
             LOG_ERROR("/ not found after host in url:" << url);
             break;
         }
-        size_t colon_pos = url.find_first_of(":", host_begin_pos, host_end_pos - host_begin_pos);
-        if (colon_pos == string::npos)
+        size_t colon_pos = url.find_first_of(':', host_begin_pos);
+        if (colon_pos == string::npos || colon_pos > host_end_pos)
         {
             buffer_context->remote_host = string(url, host_begin_pos, host_end_pos - host_begin_pos);
             buffer_context->remote_port = 80;
@@ -91,22 +93,104 @@ void DnsConnect(BufferContext* buffer_context)
         {
             buffer_context->remote_host = string(url, host_begin_pos, colon_pos - host_begin_pos);
             buffer_context->remote_port = atoi(string(url, colon_pos + 1, host_end_pos).c_str());
+            if (buffer_context->remote_port == 0)
+            {
+                LOG_ERROR("parse port failed in url:" << url);
+                break;
+            }
         }
 
+        ret = 0;
     } while (0);
-    if (parse_url_error)
+
+    LOG_DEBUG("parse url:" << url
+            << " host:" << buffer_context->remote_host
+            << " port:" << buffer_context->remote_port);
+
+    return ret;
+
+}
+
+void ConnectRemoteServer(BufferContext* buffer_context)
+{
+    LOG_DEBUG("begin connect to host:" << buffer_context->remote_host
+            << " ip:" << buffer_context->remote_ip
+            << " port:" << buffer_context->remote_port);
+
+    buffer_context->response_status = 200;
+    bufferevent_enable(buffer_context->client, EV_WRITE);
+}
+
+void DnsConnectCallback(int errcode, struct evutil_addrinfo *addr, void *arg)
+{
+    BufferContext* buffer_context = (BufferContext*)arg;
+    if (errcode) 
+    {
+        LOG_ERROR("query dns of host:" << buffer_context->remote_host
+                << " failed, error:"  << evutil_gai_strerror(errcode));
+        buffer_context->response_status = 400;
+        bufferevent_enable(buffer_context->client, EV_WRITE);
+        return ;
+    }
+    struct evutil_addrinfo *ai;
+    for (ai = addr; ai; ai = ai->ai_next) 
+    {
+        char buf[128];
+        const char *s = NULL;
+        if (ai->ai_family == AF_INET) 
+        {
+            struct sockaddr_in *sin = (struct sockaddr_in *)ai->ai_addr;
+            s = evutil_inet_ntop(AF_INET, &sin->sin_addr, buf, 128);
+        }
+        else if (ai->ai_family == AF_INET6)
+        {
+            struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)ai->ai_addr;
+            s = evutil_inet_ntop(AF_INET6, &sin6->sin6_addr, buf, 128);
+        }
+        if (s)
+        {
+            buffer_context->remote_ip = s;
+            break;
+        }
+        
+    }
+    evutil_freeaddrinfo(addr);
+    
+    if (buffer_context->remote_ip.size() > 0)
+    {
+        ConnectRemoteServer(buffer_context);
+    }
+    else
     {
         buffer_context->response_status = 400;
         bufferevent_enable(buffer_context->client, EV_WRITE);
     }
-    else
+}
+
+
+void DnsConnect(BufferContext* buffer_context)
+{
+    if (ParseHostPort(buffer_context) != 0)
     {
-        buffer_context->response_status = 200;
+        buffer_context->response_status = 400;
         bufferevent_enable(buffer_context->client, EV_WRITE);
+        return ;
     }
-    LOG_DEBUG("parse url:" << url
-            << " host:" << buffer_context->remote_host
-            << " port:" << buffer_context->remote_port);
+
+    struct evutil_addrinfo hints;
+    struct evdns_getaddrinfo_request *req;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_flags = EVUTIL_AI_CANONNAME;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+
+    evdns_getaddrinfo(dnsbase, buffer_context->remote_host.c_str(), NULL,
+                      &hints, DnsConnectCallback, buffer_context);
+
+
+    //buffer_context->response_status = 200;
+    //bufferevent_enable(buffer_context->client, EV_WRITE);
 }
 
 static void echo_read_cb(struct bufferevent *bev, void *ctx)
@@ -219,8 +303,6 @@ accept_error_cb(struct evconnlistener *listener, void *ctx)
 int
 main(int argc, char **argv)
 {
-        struct event_base *base;
-        struct evconnlistener *listener;
         struct sockaddr_in sin;
 
         int port = 3333;
@@ -237,6 +319,12 @@ main(int argc, char **argv)
         if (!base) {
                 LOG_ERROR("Couldn't open event base");
                 return 1;
+        }
+        dnsbase = evdns_base_new(base, 1);
+        if (!dnsbase)
+        {
+            LOG_ERROR("create dnsbase failed");
+            return 2;
         }
 
         /* Clear the sockaddr before using it, in case there are extra
