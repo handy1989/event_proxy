@@ -26,3 +26,20 @@ BufferContext* GetClientBufferContext(bufferevent* bev)
     return it->second;
 }
 
+void AddRemoteBufferContext(bufferevent* bev, BufferContext* buffer_context)
+{
+    assert(buffer_context);
+    assert(bev == buffer_context->remote);
+
+    remote_context[bev] = buffer_context;
+}
+
+BufferContext* GetRemoteBufferContext(bufferevent* bev)
+{
+    std::map<bufferevent*, BufferContext*>::iterator it = remote_context.find(bev);
+    if (it == remote_context.end())
+    {
+        return NULL;
+    }
+    return it->second;
+}

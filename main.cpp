@@ -71,9 +71,9 @@ int32_t ParseHostPort(BufferContext* buffer_context)
     int32_t ret = 1;
     do
     {
-        if (url.find("http://", 0, 7) == string::npos)
+        if (strncmp(url.c_str(), "http://", 7) != 0)
         {
-            LOG_ERROR("http:// not found in url:" << url);
+            LOG_ERROR("http:// not in begining of url:" << url);
             break;
         }
         size_t host_begin_pos = 7;
@@ -167,6 +167,42 @@ void DnsConnectCallback(int errcode, struct evutil_addrinfo *addr, void *arg)
     }
 }
 
+void read_remote_cb(struct bufferevent* bev, void* arg)
+{
+
+}
+
+void write_remote_cb(struct bufferevent* bev, void* arg)
+{
+      
+}
+
+void event_remote_cb(struct bufferevent* bev, short events, void* arg)
+{
+    BufferContext* buffer_context = GetRemoteBufferContext(bev);
+    assert(buffer_context);
+    assert(buffer_context->remote == bev);
+    if (events & BEV_EVENT_CONNECTED) 
+    {
+        LOG_INFO("Connect " << buffer_context->remote_host 
+                 << ":" << buffer_context->remote_port << " okay");
+        bufferevent_enable(bev, EV_WRITE);
+    } 
+    else if (events & (BEV_EVENT_ERROR|BEV_EVENT_EOF)) 
+    {
+        if (events & BEV_EVENT_ERROR) 
+        {
+            int err = bufferevent_socket_get_dns_error(bev);
+            if (err)
+            {
+                LOG_ERROR("DNS error:" << evutil_gai_strerror(err));
+                buffer_context->response_status = 400;
+                bufferevent_enable(buffer_context->client, EV_WRITE);
+            }
+        }
+        bufferevent_free(bev);
+    }
+}
 
 void DnsConnect(BufferContext* buffer_context)
 {
@@ -176,17 +212,22 @@ void DnsConnect(BufferContext* buffer_context)
         bufferevent_enable(buffer_context->client, EV_WRITE);
         return ;
     }
+    buffer_context->remote = bufferevent_socket_new(base, -1, BEV_OPT_CLOSE_ON_FREE);
+    bufferevent_setcb(buffer_context->remote, read_remote_cb, write_remote_cb, event_remote_cb, NULL);
+    bufferevent_socket_connect_hostname(buffer_context->remote, dnsbase, AF_UNSPEC, 
+            buffer_context->remote_host.c_str(), buffer_context->remote_port);
+    AddRemoteBufferContext(buffer_context->remote, buffer_context);
 
-    struct evutil_addrinfo hints;
-    struct evdns_getaddrinfo_request *req;
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_flags = EVUTIL_AI_CANONNAME;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
+    //struct evutil_addrinfo hints;
+    //struct evdns_getaddrinfo_request *req;
+    //memset(&hints, 0, sizeof(hints));
+    //hints.ai_family = AF_UNSPEC;
+    //hints.ai_flags = EVUTIL_AI_CANONNAME;
+    //hints.ai_socktype = SOCK_STREAM;
+    //hints.ai_protocol = IPPROTO_TCP;
 
-    evdns_getaddrinfo(dnsbase, buffer_context->remote_host.c_str(), NULL,
-                      &hints, DnsConnectCallback, buffer_context);
+    //evdns_getaddrinfo(dnsbase, buffer_context->remote_host.c_str(), NULL,
+    //                  &hints, DnsConnectCallback, buffer_context);
 
 
     //buffer_context->response_status = 200;

@@ -26,4 +26,7 @@ struct BufferContext
 void AddClientBufferContext(bufferevent* bev, BufferContext* buffer_context);
 BufferContext* GetClientBufferContext(bufferevent* bev);
 
+void AddRemoteBufferContext(bufferevent* bev, BufferContext* buffer_context);
+BufferContext* GetRemoteBufferContext(bufferevent* bev);
+
 #endif // _GLOBAL_H_
