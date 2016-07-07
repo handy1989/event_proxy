@@ -14,7 +14,7 @@ all:test
 %.o:%.cpp
 	g++ -o $@ -c $< ${INCLUDE}  ${CPPFLAGS}
 
-SOURCE = main.cpp global.cpp http_msg.cpp http_header.cpp http_request.cpp utility.cpp
+SOURCE = ${wildcard *.cpp}
 
 test: $(SOURCE)
 	g++ -o $@ $^ ${INCLUDE} ${LIB} ${CPPFLAGS}
