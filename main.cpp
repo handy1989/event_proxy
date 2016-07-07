@@ -136,8 +136,8 @@ accept_error_cb(struct evconnlistener *listener, void *ctx)
 {
         struct event_base *base = evconnlistener_get_base(listener);
         int err = EVUTIL_SOCKET_ERROR();
-        fprintf(stderr, "Got an error %d (%s) on the listener. "
-                "Shutting down.\n", err, evutil_socket_error_to_string(err));
+        LOG_ERROR("Got an error " << err
+                << "(" << evutil_socket_error_to_string(err) << ") on the listener");
 
         event_base_loopexit(base, NULL);
 }
@@ -155,13 +155,13 @@ main(int argc, char **argv)
                 port = atoi(argv[1]);
         }
         if (port<=0 || port>65535) {
-                puts("Invalid port");
+                LOG_ERROR("Invalid port");
                 return 1;
         }
 
         base = event_base_new();
         if (!base) {
-                puts("Couldn't open event base");
+                LOG_ERROR("Couldn't open event base");
                 return 1;
         }
 
@@ -179,7 +179,7 @@ main(int argc, char **argv)
             LEV_OPT_CLOSE_ON_FREE|LEV_OPT_REUSEABLE, -1,
             (struct sockaddr*)&sin, sizeof(sin));
         if (!listener) {
-                perror("Couldn't create listener");
+                LOG_ERROR("Couldn't create listener");
                 return 1;
         }
         evconnlistener_set_error_cb(listener, accept_error_cb);
