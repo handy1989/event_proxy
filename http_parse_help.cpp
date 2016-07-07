@@ -9,7 +9,7 @@ using std::string;
 
 int32_t ParseHostPort(BufferContext* buffer_context)
 {
-    string& url = buffer_context->http_request.url;
+    string& url = buffer_context->http_request->url;
     int32_t ret = 1;
     do
     {
@@ -25,8 +25,6 @@ int32_t ParseHostPort(BufferContext* buffer_context)
             LOG_ERROR("/ not found after host in url:" << url);
             break;
         }
-        buffer_context->http_request.url_path = string(url, host_end_pos);
-        LOG_DEBUG("url:" << url << " url_path:" << buffer_context->http_request.url_path);
 
         size_t colon_pos = url.find_first_of(':', host_begin_pos);
         if (colon_pos == string::npos || colon_pos > host_end_pos)

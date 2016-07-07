@@ -116,11 +116,13 @@ class HttpHeader
 {
 
 public:
-    HttpHeader() {}
+    HttpHeader() : content_length_(0) {}
     ~HttpHeader() {}
     int32_t Parse(char* line);
 
     std::vector<HttpHeaderEntry> entries;
+
+    int32_t content_length_;
 };
 
 #endif // _HTTP_HEADER_H_

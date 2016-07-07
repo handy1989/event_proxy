@@ -1,6 +1,5 @@
 #include "service.h"
 #include "logger.h"
-
 #include "client_side_callbacks.h"
 
 static struct evdns_base *dnsbase = NULL;

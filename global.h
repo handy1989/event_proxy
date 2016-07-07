@@ -4,6 +4,7 @@
 #include <string>
 
 #include "http_request.h"
+#include "http_response.h"
 #include "event2/bufferevent.h"
 
 struct BufferContext
@@ -16,13 +17,14 @@ struct BufferContext
     bufferevent* remote;
     bool first_line_parsed;
     bool read_header_finished;
-    HttpRequest http_request;
+    HttpRequest* http_request;
 
     int32_t response_status;
     std::string remote_host;
     std::string remote_ip;
     int32_t remote_port;
 
+    HttpResponse http_response;
     bool write_remote_finished;
 };
 

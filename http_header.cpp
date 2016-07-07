@@ -2,6 +2,7 @@
 #include "utility.h"
 #include "logger.h"
 
+#include <stdlib.h>
 #include <string>
 
 using std::string;
@@ -101,6 +102,10 @@ int32_t HttpHeader::Parse(char* line)
             entries.push_back(http_header_entry);
             LOG_DEBUG("parse header, name:" << http_header_entry.name
                     << " value:" << http_header_entry.value);
+            if (HeadersAttrs[i].id == HDR_CONTENT_LENGTH)
+            {
+                content_length_ = atoi(http_header_entry.value.c_str());
+            }
             return 0;
         }
     }
