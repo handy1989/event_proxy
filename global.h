@@ -10,7 +10,8 @@ struct BufferContext
 {
     BufferContext() : 
         first_line_parsed(false), 
-        read_header_finished(false) {}
+        read_header_finished(false),
+        write_remote_finished(false) {}
     bufferevent* client;
     bufferevent* remote;
     bool first_line_parsed;
@@ -21,6 +22,8 @@ struct BufferContext
     std::string remote_host;
     std::string remote_ip;
     int32_t remote_port;
+
+    bool write_remote_finished;
 };
 
 void AddClientBufferContext(bufferevent* bev, BufferContext* buffer_context);

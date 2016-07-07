@@ -11,6 +11,7 @@
 #include <assert.h>
 
 #include <string>
+#include <vector>
 
 #include "event2/listener.h"
 #include "event2/bufferevent.h"
@@ -20,6 +21,7 @@
 #include "event2/event.h"
 
 using std::string;
+using std::vector;
 
 struct evdns_base *dnsbase;
 struct event_base *base;
@@ -77,12 +79,15 @@ int32_t ParseHostPort(BufferContext* buffer_context)
             break;
         }
         size_t host_begin_pos = 7;
-        size_t host_end_pos = url.find_first_of("/", host_begin_pos);
+        size_t host_end_pos = url.find_first_of('/', host_begin_pos);
         if (host_end_pos == string::npos)
         {
             LOG_ERROR("/ not found after host in url:" << url);
             break;
         }
+        buffer_context->http_request.url_path = string(url, host_end_pos);
+        LOG_DEBUG("url:" << url << " url_path:" << buffer_context->http_request.url_path);
+
         size_t colon_pos = url.find_first_of(':', host_begin_pos);
         if (colon_pos == string::npos || colon_pos > host_end_pos)
         {
@@ -169,12 +174,41 @@ void DnsConnectCallback(int errcode, struct evutil_addrinfo *addr, void *arg)
 
 void read_remote_cb(struct bufferevent* bev, void* arg)
 {
-
+    char buf[1024];
+    int n;
+    struct evbuffer *input = bufferevent_get_input(bev);
+    while ((n = evbuffer_remove(input, buf, sizeof(buf))) > 0) {
+        fwrite(buf, 1, n, stdout);
+    }  
 }
 
 void write_remote_cb(struct bufferevent* bev, void* arg)
 {
-      
+    BufferContext* buffer_context = GetRemoteBufferContext(bev);
+    assert(buffer_context);
+    assert(buffer_context->remote == bev);
+    
+    if (!buffer_context->write_remote_finished)
+    {
+        LOG_DEBUG("send request to remote server");
+
+        struct evbuffer *output = bufferevent_get_output(bev);
+        evbuffer_add_printf(output, "%s %s HTTP/%d.%d\r\n", MethodStr(buffer_context->http_request.method), 
+                buffer_context->http_request.url_path.c_str(),
+                buffer_context->http_request.http_version.major, buffer_context->http_request.http_version.minor);
+        for (vector<HttpHeaderEntry>::iterator it = buffer_context->http_request.header.entries.begin();
+                it != buffer_context->http_request.header.entries.end(); ++it)
+        {
+            evbuffer_add_printf(output, "%s: %s\r\n", it->name.c_str(), it->value.c_str());
+        }
+        evbuffer_add_printf(output, "\r\n");
+
+        buffer_context->write_remote_finished = true;
+        bufferevent_enable(bev, EV_READ);
+
+        LOG_DEBUG("write_remote_cb finished");
+        
+    }
 }
 
 void event_remote_cb(struct bufferevent* bev, short events, void* arg)
@@ -186,7 +220,8 @@ void event_remote_cb(struct bufferevent* bev, short events, void* arg)
     {
         LOG_INFO("Connect " << buffer_context->remote_host 
                  << ":" << buffer_context->remote_port << " okay");
-        bufferevent_enable(bev, EV_WRITE);
+        //bufferevent_enable(bev, EV_WRITE);
+        write_remote_cb(bev, NULL);
     } 
     else if (events & (BEV_EVENT_ERROR|BEV_EVENT_EOF)) 
     {
@@ -214,6 +249,7 @@ void DnsConnect(BufferContext* buffer_context)
     }
     buffer_context->remote = bufferevent_socket_new(base, -1, BEV_OPT_CLOSE_ON_FREE);
     bufferevent_setcb(buffer_context->remote, read_remote_cb, write_remote_cb, event_remote_cb, NULL);
+    bufferevent_enable(buffer_context->remote, EV_WRITE);
     bufferevent_socket_connect_hostname(buffer_context->remote, dnsbase, AF_UNSPEC, 
             buffer_context->remote_host.c_str(), buffer_context->remote_port);
     AddRemoteBufferContext(buffer_context->remote, buffer_context);

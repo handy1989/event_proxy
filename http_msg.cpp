@@ -16,6 +16,11 @@ std::ostream& operator << (std::ostream& stream, HttpVersion& http_version)
     return stream << http_version.major << "." << http_version.minor;
 }
 
+const char* MethodStr(method_t method)
+{
+    return RequestMethodStr[(int)method];
+}
+
 method_t CreateHttpMethod(char* begin, char* end)
 {
     method_t method = METHOD_NONE;

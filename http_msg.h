@@ -24,6 +24,7 @@ std::ostream& operator << (std::ostream& stream, HttpVersion& http_version);
 
 method_t CreateHttpMethod(char* begin, char* end);
 int32_t CreateHttpVersion(char* begin, char* end, HttpVersion& http_version);
+const char* MethodStr(method_t method);
 
 class HttpMsg
 {
