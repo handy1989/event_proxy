@@ -105,7 +105,6 @@ void client_read_cb(struct bufferevent *bev, void *ctx)
             buffer_context->read_header_finished = true;
             LOG_DEBUG("read header finished, enable write");
             ConnectRemote(buffer_context);
-            //bufferevent_enable(bev, EV_WRITE);
         }
         else
         {
