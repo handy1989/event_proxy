@@ -24,24 +24,25 @@ using std::vector;
 
 int main(int argc, char **argv)
 {
-        int port = 3333;
+    google::InitGoogleLogging(argv[0]);
+    int port = 3333;
 
-        if (argc > 1) 
-        {
-            port = atoi(argv[1]);
-        }
-        if (port<=0 || port>65535)
-        {
-            LOG_ERROR("Invalid port");
-            return 1;
-        }
+    if (argc > 1) 
+    {
+        port = atoi(argv[1]);
+    }
+    if (port<=0 || port>65535)
+    {
+        LOG_ERROR("Invalid port");
+        return 1;
+    }
 
-        Service service(port);
-        if (!service.Init())
-        {
-            return 1;
-        }
-        service.Start();
+    Service service(port);
+    if (!service.Init())
+    {
+        return 1;
+    }
+    service.Start();
 
-        return 0;
+    return 0;
 }

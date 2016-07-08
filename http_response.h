@@ -18,6 +18,7 @@ public:
 
     bool first_line_parsed_;
     bool read_header_finished_;
+    int32_t remain_body_size_;
 };
 
 #endif // _HTTP_RESPONSE_H_

@@ -16,6 +16,6 @@ void accept_conn_cb(
     int socklen,
     void *ctx);
 
-void DnsConnect(BufferContext* buffer_context);
+void ConnectRemote(BufferContext* buffer_context);
 
 #endif // _CLIENT_SIDE_CALLBACKS_H_
