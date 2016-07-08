@@ -3,6 +3,7 @@
 #include "logger.h"
 #include "global.h"
 #include "http_request.h"
+#include "http_response.h"
 #include "http_parse_help.h"
 #include "service.h"
 
@@ -175,6 +176,7 @@ void DnsConnect(BufferContext* buffer_context)
         return ;
     }
     buffer_context->remote = bufferevent_socket_new(Service::get_base(), -1, BEV_OPT_CLOSE_ON_FREE);
+    buffer_context->http_response = new HttpResponse();
     bufferevent_setcb(buffer_context->remote, read_remote_cb, write_remote_cb, event_remote_cb, NULL);
     bufferevent_enable(buffer_context->remote, EV_WRITE);
     bufferevent_socket_connect_hostname(buffer_context->remote, Service::get_dnsbase(), AF_UNSPEC, 

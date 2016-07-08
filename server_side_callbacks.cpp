@@ -35,24 +35,24 @@ void read_remote_cb(struct bufferevent* bev, void* arg)
             LOG_DEBUG("break");
             break;
         }
-        if (!buffer_context->http_response.first_line_parsed_)
+        if (!buffer_context->http_response->first_line_parsed_)
         {
             LOG_DEBUG("parse first line:" << line);
-            int32_t ret = buffer_context->http_response.ParseFirstLine(line);
+            int32_t ret = buffer_context->http_response->ParseFirstLine(line);
 
-            LOG_DEBUG("parse first response line, http_version:" << buffer_context->http_response.http_version
-                << " http_code:" << buffer_context->http_response.http_code_
-                << " http_code_str:" << buffer_context->http_response.http_code_str_
+            LOG_DEBUG("parse first response line, http_version:" << buffer_context->http_response->http_version
+                << " http_code:" << buffer_context->http_response->http_code_
+                << " http_code_str:" << buffer_context->http_response->http_code_str_
                 << " ret:" << ret);
         }
         else if (strlen(line) == 0)
         {
-            buffer_context->http_response.read_header_finished_ = true;
-            LOG_DEBUG("read header finished, content_length:" << buffer_context->http_response.header.content_length_);
+            buffer_context->http_response->read_header_finished_ = true;
+            LOG_DEBUG("read header finished, content_length:" << buffer_context->http_response->header.content_length_);
         }
         else
         {
-            buffer_context->http_request.ParseHeaderLine(line);
+            buffer_context->http_response->ParseHeaderLine(line);
             LOG_DEBUG("parse line:" << line);
         }
         free(line);
@@ -70,11 +70,11 @@ void write_remote_cb(struct bufferevent* bev, void* arg)
         LOG_DEBUG("send request to remote server");
 
         struct evbuffer *output = bufferevent_get_output(bev);
-        evbuffer_add_printf(output, "%s %s HTTP/%d.%d\r\n", MethodStr(buffer_context->http_request.method), 
-                buffer_context->http_request.url_path.c_str(),
-                buffer_context->http_request.http_version.major, buffer_context->http_request.http_version.minor);
-        for (vector<HttpHeaderEntry>::iterator it = buffer_context->http_request.header.entries.begin();
-                it != buffer_context->http_request.header.entries.end(); ++it)
+        evbuffer_add_printf(output, "%s %s HTTP/%d.%d\r\n", MethodStr(buffer_context->http_request->method), 
+                buffer_context->http_request->url_path.c_str(),
+                buffer_context->http_request->http_version.major, buffer_context->http_request->http_version.minor);
+        for (vector<HttpHeaderEntry>::iterator it = buffer_context->http_request->header.entries.begin();
+                it != buffer_context->http_request->header.entries.end(); ++it)
         {
             evbuffer_add_printf(output, "%s: %s\r\n", it->name.c_str(), it->value.c_str());
         }

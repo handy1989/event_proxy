@@ -105,6 +105,7 @@ int32_t HttpHeader::Parse(char* line)
             if (HeadersAttrs[i].id == HDR_CONTENT_LENGTH)
             {
                 content_length_ = atoi(http_header_entry.value.c_str());
+                LOG_DEBUG("content_length:" << content_length_);
             }
             return 0;
         }

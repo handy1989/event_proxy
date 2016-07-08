@@ -13,8 +13,11 @@ struct BufferContext
         first_line_parsed(false), 
         read_header_finished(false),
         write_remote_finished(false) {}
+
     bufferevent* client;
     bufferevent* remote;
+
+    // client_side
     bool first_line_parsed;
     bool read_header_finished;
     HttpRequest* http_request;
@@ -24,7 +27,8 @@ struct BufferContext
     std::string remote_ip;
     int32_t remote_port;
 
-    HttpResponse http_response;
+    // remote_side
+    HttpResponse* http_response;
     bool write_remote_finished;
 };
 
