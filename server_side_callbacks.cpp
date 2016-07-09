@@ -71,13 +71,13 @@ void ReadRemoteBody(BufferContext* buffer_context)
     struct evbuffer* client_output = bufferevent_get_output(buffer_context->client);
     HttpResponse* http_response = buffer_context->http_response;
 
-    LOG_DEBUG("read remote body, remain_size:" << http_response->remain_body_size_
+    LOG_DEBUG("begin read remote body, remain_size:" << http_response->remain_body_size_
             << " read_remote_body_finished:" << buffer_context->read_remote_body_finished
             << " buffer_context:" << buffer_context);
     while (int n = evbuffer_remove_buffer(remote_input, client_output, http_response->remain_body_size_))
     {
         http_response->remain_body_size_ -= n;
-        LOG_DEBUG("remove " << n << " bytes, remain_body_size:" << http_response->remain_body_size_); 
+        LOG_DEBUG("remove " << n << " bytes, remain_body_size:" << http_response->remain_body_size_ << " remote:" << remote_input); 
     }
     if (http_response->remain_body_size_ == 0)
     {
@@ -85,7 +85,7 @@ void ReadRemoteBody(BufferContext* buffer_context)
         bufferevent_free(buffer_context->remote);
         LOG_INFO("read remote body finished, free remote:" << buffer_context->remote);
     }
-    LOG_DEBUG("read remote body, remain_size:" << http_response->remain_body_size_
+    LOG_DEBUG("finish read remote body, remain_size:" << http_response->remain_body_size_
             << " read_remote_body_finished:" << buffer_context->read_remote_body_finished
             << " buffer_context:" << buffer_context);
 }
