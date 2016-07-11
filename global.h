@@ -16,7 +16,8 @@ struct BufferContext
         first_line_parsed(false), 
         read_header_finished(false),
         write_remote_finished(false),
-        read_remote_body_finished(false) {}
+        read_remote_body_finished(false),
+        client(NULL), remote(NULL), http_request(NULL), http_response(NULL) {}
 
     bufferevent* client;
     bufferevent* remote;
