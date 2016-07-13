@@ -3,9 +3,9 @@ ifeq (${DEBUG}, 1)
 else
 	CPPFLAGS = -DLOGGER_INFO_LEVEL
 endif
-INCLUDE = -I/opt/third_party/glog/include -I/opt/third_party/libevent-2.1.5/include -I..
+INCLUDE = -I/opt/third_party/glog/include -I/opt/local/libevent-2.1.5/include -I..
 LIB = -L/opt/third_party/glog/lib \
-	  -L/opt/third_party/libevent-2.1.5/lib \
+	  -L/opt/local/libevent-2.1.5/lib \
 	  -lglog -levent -levent_extra -levent_core
 CPPFLAGS += -g -ggdb -O0
 

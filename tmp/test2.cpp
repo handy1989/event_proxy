@@ -127,6 +127,7 @@ int read_header_done_cb(struct evhttp_request* request, void* arg)
         LOG_INFO("header, " << header->key << ":" << header->value);
         evhttp_add_header(evhttp_request_get_output_headers(client_request), header->key, header->value);
     }
+    evhttp_add_header(evhttp_request_get_output_headers(client_request), "test", "zhangmenghan");
     evhttp_send_reply_start(client_request, 200, "OK");
 
 }
@@ -237,7 +238,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    int ret = evhttp_bind_socket(http_server, "127.0.0.1", 3334);
+    int ret = evhttp_bind_socket(http_server, "0.0.0.0", 3334);
     if (ret != 0)
     {
         LOG_INFO("bind failed");
