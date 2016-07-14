@@ -9,7 +9,7 @@
 #include "event2/event.h"
 #include "event2/buffer.h"
 #include "event2/dns.h"
-
+#include <signal.h>
 #include <map>
 
 #define FREE_REQUEST(req) do {if (req) evhttp_request_free(req); req = NULL;} while(0);
@@ -28,11 +28,25 @@ struct RequestContext
     struct evhttp_request* remote_request;
     struct evhttp_connection* remote_conn;
     struct evhttp_connection* client_conn;
+
+    struct event* clean_timer;
 };
 
 void mybreak()
 {
 
+}
+
+void free_remote_conn_cb(int sock, short which, void* arg)
+{
+    RequestContext* request_ctx = (RequestContext*)arg;
+
+    if (request_ctx->remote_conn)
+    {
+        LOG_INFO("free remote_conn:" << request_ctx->remote_conn);
+        evhttp_connection_free(request_ctx->remote_conn);
+        request_ctx->remote_conn = NULL;
+    }
 }
 
 void remote_read_cb(struct evhttp_request* response, void* arg)
@@ -49,9 +63,25 @@ void remote_read_cb(struct evhttp_request* response, void* arg)
     LOG_INFO("remote_read_cb, buffer length:" << evbuffer_get_length(evhttp_request_get_input_buffer(response))
             << " request_ctx:" << request_ctx);
     LOG_INFO("send reply end");
-    LOG_INFO("free remote_conn:" << request_ctx->remote_conn);
-    evhttp_connection_free(request_ctx->remote_conn);
-
+    
+    struct timeval interval;
+    interval.tv_sec = 0;
+    interval.tv_usec = 1000;
+    
+    request_ctx->clean_timer = event_new(base, -1, EV_PERSIST, free_remote_conn_cb, request_ctx);
+    if (!request_ctx->clean_timer)
+    {
+        LOG_ERROR("failed to create clean_timer, request_ctx:" << request_ctx
+                << " remote_conn:" << request_ctx->remote_conn);
+        return ;
+    }
+    if (event_add(request_ctx->clean_timer, &interval) != 0)
+    {
+        LOG_ERROR("failed to add clean_timer, request_ctx:" << request_ctx
+                << " remote_conn:" << request_ctx->remote_conn
+                << " clean_timer:" << request_ctx->clean_timer);
+        event_free(request_ctx->clean_timer);
+    }
     return ;
 }
 
@@ -207,6 +237,7 @@ void generic_cb(struct evhttp_request* req, void* arg)
 
 int main(int argc, char **argv)
 {
+    signal(SIGPIPE, SIG_IGN);
     google::InitGoogleLogging(argv[0]);
     base = event_base_new();
     dnsbase = evdns_base_new(base, 1);
