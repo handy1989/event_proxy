@@ -3,13 +3,13 @@ ifeq (${DEBUG}, 1)
 else
 	CPPFLAGS = -DLOGGER_INFO_LEVEL
 endif
-INCLUDE = -I/opt/third_party/glog/include -I/opt/third_party/libevent/include
+INCLUDE = -I/opt/third_party/glog/include -I/opt/local/libevent-2.1.5/include
 LIB = -L/opt/third_party/glog/lib \
-	  -L/opt/third_party/libevent/lib \
-	  -lglog -levent
+	  -L/opt/local/libevent-2.1.5/lib \
+	  -lglog -levent -levent_extra -levent_core
 CPPFLAGS += -g -ggdb -O0
 
-all:test
+all:proxy
 
 %.o:%.cpp
 	g++ -o $@ -c $< ${INCLUDE}  ${CPPFLAGS}
@@ -17,8 +17,8 @@ all:test
 SOURCE = ${wildcard *.cpp}
 OBJECT = ${patsubst %.cpp, %.o, $(SOURCE)}
 
-test: $(OBJECT)
+proxy: $(OBJECT)
 	g++ -o $@ $^ ${INCLUDE} ${LIB} ${CPPFLAGS}
 
 clean:
-	rm -f *.o test
+	rm -f *.o proxy
