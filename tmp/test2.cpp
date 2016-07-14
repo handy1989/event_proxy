@@ -30,15 +30,27 @@ struct RequestContext
     struct evhttp_connection* client_conn;
 };
 
+void mybreak()
+{
+
+}
+
 void remote_read_cb(struct evhttp_request* response, void* arg)
 {
     RequestContext* request_ctx = (RequestContext*)arg;
     evhttp_request* client_request = request_ctx->client_request;
     evhttp_send_reply_end(client_request);
 
+    LOG_INFO("ctx:" << request_ctx << " response:" << response << " connection:" << request_ctx->remote_conn);
+    if (!response)
+    {
+        return;
+    }
     LOG_INFO("remote_read_cb, buffer length:" << evbuffer_get_length(evhttp_request_get_input_buffer(response))
             << " request_ctx:" << request_ctx);
     LOG_INFO("send reply end");
+    LOG_INFO("free remote_conn:" << request_ctx->remote_conn);
+    evhttp_connection_free(request_ctx->remote_conn);
 
     return ;
 }
@@ -94,8 +106,6 @@ void reply_complete_cb(struct evhttp_request* request, void* arg)
     evhttp_request* client_request = request_ctx->client_request;
     
     LOG_INFO("reply_complete_cb, request:"<< request << " client_request:" << request_ctx->client_request);
-    LOG_INFO("free remote_conn:" << request_ctx->remote_conn);
-    evhttp_connection_free(request_ctx->remote_conn);
 
 }
 
@@ -139,6 +149,13 @@ void ConnectRemote(RequestContext* request_ctx)
     int port = evhttp_uri_get_port(request_ctx->evhttp_uri);
     if (port < 0) port = 80;
 
+    LOG_INFO("request_ctx:" << request_ctx
+            << " remote_request:" << request 
+            << " host:" << host 
+            << " port:" << port 
+            << " path:" << evhttp_uri_get_path(request_ctx->evhttp_uri)
+            << " query:" << evhttp_uri_get_query(request_ctx->evhttp_uri));
+
     struct evhttp_connection* connection =  evhttp_connection_base_new(base, dnsbase, 
             evhttp_uri_get_host(request_ctx->evhttp_uri),
             evhttp_uri_get_port(request_ctx->evhttp_uri) > 0 ? evhttp_uri_get_port(request_ctx->evhttp_uri) : 80);
@@ -149,11 +166,6 @@ void ConnectRemote(RequestContext* request_ctx)
     }
 
     evhttp_connection_set_closecb(connection, remote_connection_closecb, request_ctx);
-    LOG_INFO("request_ctx:" << request_ctx
-            << " remote_request:" << request 
-            << " host:" << host 
-            << " port:" << port 
-            << " path:" << evhttp_uri_get_path(request_ctx->evhttp_uri));
 
     struct evkeyvalq* request_headers = evhttp_request_get_input_headers(request_ctx->client_request);
     struct evkeyval* header;
@@ -166,7 +178,9 @@ void ConnectRemote(RequestContext* request_ctx)
     request_ctx->remote_request = request;
     request_ctx->remote_conn = connection;
 
-    evhttp_make_request(connection, request, EVHTTP_REQ_GET, evhttp_uri_get_path(request_ctx->evhttp_uri));
+    char* url = (char*)malloc(1024);
+    evhttp_make_request(connection, request, EVHTTP_REQ_GET, evhttp_uri_join(const_cast<struct evhttp_uri*>(request_ctx->evhttp_uri), url, 1024));
+    free(url);
 }
 
 
