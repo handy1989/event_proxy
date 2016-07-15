@@ -16,10 +16,12 @@ void SignalHandler(int sig)
     switch (sig)
     {
         case SIGPIPE:
-            printf("received SIGPIPE, ignore\n");
+            LOG_WARNING("received SIGPIPE, ignore");
             break;
         case SIGTERM:
+            LOG_WARNING("received SIGTERM");
         case SIGINT:
+            LOG_WARNING("received SIGINT");
             break;
 
     }
@@ -27,13 +29,16 @@ void SignalHandler(int sig)
 
 int main(int argc, char** argv)
 {
-    Signal(SIGPIPE, SignalHandler);
     if (argc != 2)
     {
         printf("usage: %s thread_num\n", argv[0]);
         return 1;
     }
     google::InitGoogleLogging(argv[0]);
+
+    Signal(SIGPIPE, SignalHandler);
+    Signal(SIGTERM, SignalHandler);
+    //Signal(SIGINT, SignalHandler);
 
     ProxyServer proxy_server(3333, 0, atoi(argv[1]));
     if (!proxy_server.Init()) 
