@@ -7,14 +7,16 @@
 #include "event2/buffer.h"
 #include "event2/dns.h"
 
-class HttpThread
+class HttpService
 {
 public:
-    HttpThread(const int sock);
+    HttpService (const int sock);
 
     bool Init();
     void Start();
     void Stop();
+
+private:
 
 private:
     int sock_;
@@ -22,5 +24,8 @@ private:
     struct evdns_base* dnsbase_;
     struct evhttp* http_server_;
 };
+
+
+
 
 #endif // _HTTP_THREAD_H_

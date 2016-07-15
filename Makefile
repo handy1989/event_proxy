@@ -3,10 +3,14 @@ ifeq (${DEBUG}, 1)
 else
 	CPPFLAGS = -DLOGGER_INFO_LEVEL
 endif
-INCLUDE = -I/opt/third_party/glog/include -I/opt/local/libevent-2.1.5/include
+INCLUDE = -I/opt/third_party/glog/include \
+	-I/opt/local/libevent-2.1.5/include \
+	-I/opt/third_party/boost/include
+
 LIB = -L/opt/third_party/glog/lib \
 	  -L/opt/local/libevent-2.1.5/lib \
-	  -lglog -levent -levent_extra -levent_core
+	  -L/opt/third_party/boost/lib \
+	  -lglog -levent -levent_extra -levent_core -lboost_thread
 CPPFLAGS += -g -ggdb -O0
 
 all:proxy
