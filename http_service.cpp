@@ -2,7 +2,11 @@
 #include "http_callbacks.h"
 #include "logger.h"
 
-HttpService::HttpService(const int sock) : sock_(sock)
+HttpService::HttpService(const int sock) : 
+    sock_(sock), 
+    base_(NULL),
+    dnsbase_(NULL),
+    http_server_(NULL)
 {
 
 }
@@ -39,9 +43,7 @@ bool HttpService::Init()
             break;
         }
 
-        CallbackPara* callback_para = new CallbackPara();
-        callback_para->http_service = this;
-        evhttp_set_gencb(http_server_, HttpGenericCallback, callback_para);
+        evhttp_set_gencb(http_server_, HttpGenericCallback, this);
         ret = true;
 
     } while(0);

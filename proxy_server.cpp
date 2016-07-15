@@ -91,7 +91,3 @@ void ProxyServer::Stop()
         (*it)->Stop();
     }
 }
-
-void ProxyServer::ThreadProc()
-{
-}

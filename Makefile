@@ -10,7 +10,7 @@ INCLUDE = -I/opt/third_party/glog/include \
 LIB = -L/opt/third_party/glog/lib \
 	  -L/opt/local/libevent-2.1.5/lib \
 	  -L/opt/third_party/boost/lib \
-	  -lglog -levent -levent_extra -levent_core -lboost_thread
+	  -lglog -levent -levent_extra -levent_core -lboost_thread -lboost_system
 CPPFLAGS += -g -ggdb -O0
 
 all:proxy

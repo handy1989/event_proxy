@@ -18,8 +18,8 @@ public:
     void Stop();
 
 private:
-    void ThreadProc();
     int BindSocket();
+
 private:
     int listen_fd_;
     int http_port_;

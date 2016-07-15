@@ -1,5 +1,5 @@
-#ifndef _HTTP_THREAD_H_
-#define _HTTP_THREAD_H_
+#ifndef _HTTP_SERVICE_H_
+#define _HTTP_SERVICE_H_
 
 #include "event2/http.h"
 #include "event2/http_struct.h"
@@ -16,6 +16,9 @@ public:
     void Start();
     void Stop();
 
+    struct event_base* base() { return base_; }
+    struct evdns_base* dnsbase() { return dnsbase_; }
+
 private:
 
 private:
@@ -28,4 +31,4 @@ private:
 
 
 
-#endif // _HTTP_THREAD_H_
+#endif // _HTTP_SERVICE_H_
