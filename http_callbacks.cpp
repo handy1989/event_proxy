@@ -9,8 +9,18 @@ void HttpGenericCallback(struct evhttp_request* request, void* arg)
 {
     const struct evhttp_uri* evhttp_uri = evhttp_request_get_evhttp_uri(request);
     char* url = (char*)malloc(1024);
-    LOG_INFO("uri_join:" << evhttp_uri_join(const_cast<struct evhttp_uri*>(evhttp_uri), url, 1024));
+    LOG_DEBUG("uri_join:" << evhttp_uri_join(const_cast<struct evhttp_uri*>(evhttp_uri), url, 1024));
     free(url);
+
+    //sleep(1);
+
+    //evbuffer* buf = evbuffer_new();
+    //evbuffer_add_printf(buf, "hello proxy");
+    //evhttp_send_reply(request, 200, "OK", buf);
+    //evbuffer_free(buf);
+    //
+    //LOG_DEBUG("HttpGenericCallback finished");
+    //return ;
 
     CallbackPara* callback_para = new CallbackPara();
     callback_para->http_service = (HttpService*)arg;
@@ -71,13 +81,12 @@ void RemoteReadCallback(struct evhttp_request* response, void* arg)
     evhttp_request* client_request = callback_para->client_request;
 
     evhttp_send_reply_end(client_request);
-    LOG_INFO("callback_para:" << callback_para << " response:" << response << " connection:" << callback_para->remote_conn);
+    LOG_INFO("reply end, callback_para:" << callback_para << " response:" << response << " connection:" << callback_para->remote_conn);
     if (!response)
     {
         return;
     }
-    LOG_INFO("remote_read_cb, buffer length:" << evbuffer_get_length(evhttp_request_get_input_buffer(response)));
-    LOG_INFO("send reply end");
+    LOG_DEBUG("remote_read_cb, buffer length:" << evbuffer_get_length(evhttp_request_get_input_buffer(response)));
     
     struct timeval interval;
     interval.tv_sec = 0;
@@ -108,10 +117,10 @@ int ReadHeaderDoneCallback(struct evhttp_request* remote_rsp, void* arg)
 
     struct evkeyvalq* request_headers = evhttp_request_get_input_headers(remote_rsp);
     struct evkeyval* header;
-    LOG_INFO("remote remote header done:");
+    LOG_DEBUG("remote remote header done:");
     for (header = request_headers->tqh_first; header; header = header->next.tqe_next)
     {
-        LOG_INFO("header, " << header->key << ":" << header->value);
+        LOG_DEBUG("header, " << header->key << ":" << header->value);
         evhttp_add_header(evhttp_request_get_output_headers(client_request), header->key, header->value);
     }
     evhttp_add_header(evhttp_request_get_output_headers(client_request), "test", "zhangmenghan");
@@ -126,7 +135,9 @@ void ReadChunkCallback(struct evhttp_request* remote_rsp, void* arg)
 
     evbuffer* response_buf = evhttp_request_get_input_buffer(remote_rsp);
 
-    LOG_INFO("read_chunk_cb, read buf length:" << evbuffer_get_length(response_buf));
+    LOG_DEBUG("read_chunk_cb, read buf length:" << evbuffer_get_length(response_buf)
+            << " client_reqeust:" << callback_para->client_request
+            << " remote_rsp:" << remote_rsp);
     evhttp_send_reply_chunk(client_request, response_buf);
 }
 
@@ -190,7 +201,7 @@ void ConnectRemote(CallbackPara* callback_para)
     for (header = request_headers->tqh_first; header; header = header->next.tqe_next)
     {
         evhttp_add_header(evhttp_request_get_output_headers(request), header->key, header->value);
-        LOG_INFO("header, " << header->key << ":" << header->value);
+        LOG_DEBUG("header, " << header->key << ":" << header->value);
     }
 
     callback_para->remote_request = request;
@@ -199,4 +210,6 @@ void ConnectRemote(CallbackPara* callback_para)
     char* url = (char*)malloc(8192);
     evhttp_make_request(connection, request, EVHTTP_REQ_GET, evhttp_uri_join(const_cast<struct evhttp_uri*>(callback_para->uri), url, 8192));
     free(url);
+
+    LOG_DEBUG("make request finished. callback_para:" << callback_para);
 }
