@@ -42,7 +42,7 @@ void ReplyCompleteCallback(struct evhttp_request* request, void* arg)
 
     evhttp_request* client_request = callback_para->client_request;
     
-    LOG_INFO("reply_complete_cb, request:"<< request << " client_request:" << callback_para->client_request);
+    LOG_INFO("reply_complete_cb, request:"<< request << " client_request:" << client_request);
 
 }
 
@@ -126,6 +126,7 @@ int ReadHeaderDoneCallback(struct evhttp_request* remote_rsp, void* arg)
     evhttp_add_header(evhttp_request_get_output_headers(client_request), "test", "zhangmenghan");
     evhttp_send_reply_start(client_request, 200, "OK");
 
+    return 0;
 }
 
 void ReadChunkCallback(struct evhttp_request* remote_rsp, void* arg)

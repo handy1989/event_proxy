@@ -8,4 +8,4 @@ export GLOG_logbufsecs=0
 export GLOG_max_log_size=100
 export GLOG_minloglevel=0
 export GLOG_stop_logging_if_full_disk=1
-./proxy $*
+./bin/proxy $*
