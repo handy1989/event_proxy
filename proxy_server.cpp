@@ -88,6 +88,8 @@ void ProxyServer::Stop()
 {
     for (vector<HttpService*>::iterator it = http_handlers_.begin(); it != http_handlers_.end(); ++it)
     {
+        LOG_INFO("stop http_service begin");
         (*it)->Stop();
+        LOG_INFO("stop http_service finished");
     }
 }

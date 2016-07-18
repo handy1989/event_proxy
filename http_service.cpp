@@ -16,6 +16,7 @@ bool HttpService::Init()
     bool ret = false;
     do
     {
+        evthread_use_pthreads();
         base_ = event_base_new();
         if (!base_)
         {
@@ -54,10 +55,13 @@ bool HttpService::Init()
 void HttpService::Start()
 {
     event_base_dispatch(base_);
+    LOG_INFO("event_base_dispatch finished");
 }
 
 void HttpService::Stop()
 {
     event_base_loopexit(base_, NULL);
+    //event_base_loopbreak(base_);
+    LOG_INFO("event_base_loopexit called");
 }
 
