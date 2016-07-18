@@ -20,9 +20,10 @@ all:proxy
 
 SOURCE = ${wildcard *.cpp}
 OBJECT = ${patsubst %.cpp, %.o, $(SOURCE)}
+DEP = ${patsubst %.cpp, %.d, $(SOURCE)}
 
 proxy: $(OBJECT)
 	g++ -o $@ $^ ${INCLUDE} ${LIB} ${CPPFLAGS}
 
 clean:
-	rm -f *.o proxy
+	rm -f $(OBJECT) $(DEP) proxy
