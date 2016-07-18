@@ -3,7 +3,7 @@
 
 #include "http_service.h"
 
-struct CallbackPara
+struct RequestCtx
 {
     HttpService* http_service;
     struct evhttp_uri* uri;
@@ -15,7 +15,7 @@ struct CallbackPara
     struct event* clean_timer;
 };
 
-void ConnectRemote(CallbackPara* callback_para);
+void ConnectRemote(RequestCtx* request_ctx);
 
 void HttpGenericCallback(struct evhttp_request* req, void* arg);
 void ReplyCompleteCallback(struct evhttp_request* request, void* arg);
