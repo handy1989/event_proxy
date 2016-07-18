@@ -8,7 +8,6 @@
 
 boost::weak_ptr<ProxyServer> g_proxy_service;
 
-
 void Signal(int sig, void (*signal_handler)(int))
 {
     struct sigaction act;
