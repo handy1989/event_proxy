@@ -2,6 +2,7 @@
 #define CACHE_MGR_H_
 
 #include "lock.h"
+#include "singleton.h"
 
 #include <map>
 #include <string>
@@ -23,5 +24,7 @@ private:
 
     SafeLock lock_;
 };
+
+typedef Singleton<CacheMgr> SingletonCacheMgr;
 
 #endif // CACHE_MGR_H_

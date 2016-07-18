@@ -1,32 +1,41 @@
 #include "http_callbacks.h"
 #include "logger.h"
+#include "cache_mgr.h"
+#include "store_entry.h"
 
 #include <sys/queue.h>
 #include <event.h>
 #include <stdlib.h>
 
+#define SAFELY_DELETE(p) do{if(p)delete p; p = NULL;}while(0);
+#define MAX_URL_SIZE 8192
+
 void HttpGenericCallback(struct evhttp_request* request, void* arg)
 {
     const struct evhttp_uri* evhttp_uri = evhttp_request_get_evhttp_uri(request);
-    char* url = (char*)malloc(1024);
-    LOG_DEBUG("uri_join:" << evhttp_uri_join(const_cast<struct evhttp_uri*>(evhttp_uri), url, 1024));
-    free(url);
-
-    //sleep(1);
-
-    //evbuffer* buf = evbuffer_new();
-    //evbuffer_add_printf(buf, "hello proxy");
-    //evhttp_send_reply(request, 200, "OK", buf);
-    //evbuffer_free(buf);
-    //
-    //LOG_DEBUG("HttpGenericCallback finished");
-    //return ;
 
     RequestCtx* request_ctx = new RequestCtx();
     request_ctx->http_service = (HttpService*)arg;
     request_ctx->client_request = request;
     request_ctx->client_conn = evhttp_request_get_connection(request);
     request_ctx->uri = const_cast<struct evhttp_uri*>(evhttp_uri);
+    request_ctx->url = (char*)malloc(MAX_URL_SIZE);
+
+    LOG_DEBUG("uri_join:" << evhttp_uri_join(const_cast<struct evhttp_uri*>(evhttp_uri), request_ctx->url, MAX_URL_SIZE));
+
+    StoreEntry* entry = SingletonCacheMgr::Instance().GetStoreEntry(request_ctx->url);
+    LOG_DEBUG("url:" << request_ctx->url << " entry:" << entry);
+
+    entry->Lock();
+    StoreClient* store_client = new StoreClient(request);
+    entry->AddClient(store_client);
+    int client_num = entry->GetClientNum();
+    entry->Unlock();
+
+    if (client_num > 1)
+    {
+        return ;
+    }
 
     evhttp_request_set_on_complete_cb(request, ReplyCompleteCallback, request_ctx);
     evhttp_connection_set_closecb(request_ctx->client_conn, ClientConnectionCloseCallback, request_ctx);
@@ -70,8 +79,8 @@ void FreeRemoteConnCallback(int sock, short which, void* arg)
 
         LOG_INFO("delete request_ctx:" << request_ctx);
 
-        delete request_ctx;
-        request_ctx = NULL;
+        SAFELY_DELETE(request_ctx->url);
+        SAFELY_DELETE(request_ctx);
     }
 }
 

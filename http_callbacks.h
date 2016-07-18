@@ -6,6 +6,7 @@
 struct RequestCtx
 {
     HttpService* http_service;
+    char* url;
     struct evhttp_uri* uri;
     struct evhttp_request* client_request;
     struct evhttp_request* remote_request;

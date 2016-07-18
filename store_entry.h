@@ -6,11 +6,12 @@
 #include <string>
 #include <list>
 
-
-struct StoreClient
+class StoreClient
 {
-   struct evhttp_request* client_request; 
-   int offset;
+public:
+    StoreClient(struct evhttp_request* client_request) : client_request_(client_request), offset_(0) {}
+    struct evhttp_request* client_request_; 
+    int offset_;
 };
 
 class MemObj
