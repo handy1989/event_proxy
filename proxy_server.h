@@ -1,5 +1,5 @@
-#ifndef _PROXY_SERVER_H_
-#define _PROXY_SERVER_H_
+#ifndef PROXY_SERVER_H_
+#define PROXY_SERVER_H_
 
 #include "boost/thread.hpp"
 
@@ -25,8 +25,8 @@ private:
     int http_port_;
     int ssl_port_;
     int thread_num_;
-    std::vector<HttpService*> http_handlers_;
+    std::vector<HttpService*> http_services_;
     std::vector<boost::thread*> threads_;
 };
 
-#endif // _PROXY_SERVER_H_
+#endif // PROXY_SERVER_H_

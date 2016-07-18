@@ -1,5 +1,5 @@
-#ifndef _HTTP_SERVICE_H_
-#define _HTTP_SERVICE_H_
+#ifndef HTTP_SERVICE_H_
+#define HTTP_SERVICE_H_
 
 #include "event2/http.h"
 #include "event2/http_struct.h"
@@ -32,4 +32,4 @@ private:
 
 
 
-#endif // _HTTP_SERVICE_H_
+#endif // HTTP_SERVICE_H_

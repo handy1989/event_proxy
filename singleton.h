@@ -1,5 +1,5 @@
-#ifndef _SINGLETON_H_H
-#define _SINGLETON_H_H
+#ifndef SINGLETON_H_H
+#define SINGLETON_H_H
 
 #include <boost/noncopyable.hpp>
 #include <pthread.h>
@@ -44,4 +44,4 @@ pthread_once_t Singleton<T>::ponce_ = PTHREAD_ONCE_INIT;
 template<typename T>
 T* Singleton<T>::value_ = NULL;
 
-#endif // _SINGLETON_H_H
+#endif // SINGLETON_H_H

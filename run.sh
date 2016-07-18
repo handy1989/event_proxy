@@ -1,4 +1,5 @@
-#printf!/bin/bash
+#!/bin/bash
+export LD_LIBRARY_PATH=/opt/local/libevent-2.1.5/lib:/opt/third_party/glog/lib:/opt/third_party/boost/lib:$LD_LIBRARY_PATH
 LOG_DIR="log"
 mkdir -p $LOG_DIR
 export GLOG_log_dir=$LOG_DIR

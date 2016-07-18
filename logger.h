@@ -1,5 +1,5 @@
-#ifndef _COMMON_LOGGER_H_
-#define _COMMON_LOGGER_H_
+#ifndef LOGGER_H_
+#define LOGGER_H_
 
 #include <stdio.h>
 #include <stdint.h>
@@ -67,4 +67,4 @@
 
 #endif // USE_LOG4CPP_MACROS
 
-#endif // _COMMON_LOGGER_H_
+#endif // LOGGER_H_

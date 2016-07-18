@@ -1,5 +1,5 @@
-#ifndef _HTTP_CALLBACKS_H_
-#define _HTTP_CALLBACKS_H_
+#ifndef HTTP_CALLBACKS_H_
+#define HTTP_CALLBACKS_H_
 
 #include "http_service.h"
 
@@ -28,4 +28,4 @@ void SendRemoteCompleteCallback(struct evhttp_request* request, void* arg);
 void RemoteConnectionCloseCallback(struct evhttp_connection* connection, void* arg);
 void FreeRemoteConnCallback(int sock, short which, void* arg);
 
-#endif // _HTTP_CALLBACKS_H_
+#endif // HTTP_CALLBACKS_H_

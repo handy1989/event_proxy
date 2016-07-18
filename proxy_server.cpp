@@ -11,7 +11,7 @@ ProxyServer::ProxyServer(const int http_port, const int ssl_port, const int thre
 
 ProxyServer::~ProxyServer()
 {
-    for (vector<HttpService*>::iterator it = http_handlers_.begin(); it != http_handlers_.end(); ++it)
+    for (vector<HttpService*>::iterator it = http_services_.begin(); it != http_services_.end(); ++it)
     {
         delete (*it);
     }
@@ -71,7 +71,7 @@ void ProxyServer::Start()
             continue;
         }
         boost::thread* thread = new boost::thread(&HttpService::Start, http_service);
-        http_handlers_.push_back(http_service);
+        http_services_.push_back(http_service);
         threads_.push_back(thread);
     }
 }
@@ -86,7 +86,7 @@ void ProxyServer::Wait()
 
 void ProxyServer::Stop()
 {
-    for (vector<HttpService*>::iterator it = http_handlers_.begin(); it != http_handlers_.end(); ++it)
+    for (vector<HttpService*>::iterator it = http_services_.begin(); it != http_services_.end(); ++it)
     {
         LOG_INFO("stop http_service begin");
         (*it)->Stop();
