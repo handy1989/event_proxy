@@ -37,7 +37,7 @@ void HttpGenericCallback(struct evhttp_request* request, void* arg)
     if (client_num > 1)
     {
         // 正在处理相同请求
-        LOG_INFO("deliver to other process, url:" << request_ctx->url << " client_num:" << client_num << " client:" << store_client);
+        LOG_INFO("deliver to other process, url:" << request_ctx->url << " client_num:" << client_num << " client_request:" << store_client->request);
         return ;
     }
 
@@ -50,7 +50,7 @@ void HttpGenericCallback(struct evhttp_request* request, void* arg)
         return ;
     }
 
-    LOG_INFO("process url:" << request_ctx->url << " client_num:" << client_num << " client:" << store_client << " request_ctx:" << request_ctx);
+    LOG_INFO("process url:" << request_ctx->url << " client_num:" << client_num << " client_request:" << store_client->request << " request_ctx:" << request_ctx);
 
     evhttp_request_set_on_complete_cb(request, ReplyCompleteCallback, request_ctx);
     evhttp_connection_set_closecb(request_ctx->client_conn, ClientConnectionCloseCallback, request_ctx);
@@ -72,7 +72,8 @@ void ClientConnectionCloseCallback(struct evhttp_connection* connection, void* a
 {
     RequestCtx* request_ctx = (RequestCtx*)arg;
     LOG_INFO("client_connection_closecb, cur conn:" << connection
-            << " client_conn:" << request_ctx->client_conn);
+            << " client_conn:" << request_ctx->client_conn
+            << " client_request:" << request_ctx->client_request);
 }
 
 void FreeRemoteConnCallback(int sock, short which, void* arg)

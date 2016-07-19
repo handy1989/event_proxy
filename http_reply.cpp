@@ -28,6 +28,7 @@ void ReplyClientHeader(StoreClient* client, StoreEntry* store_entry)
         evhttp_add_header(client_header, header->key, header->value);
     }
     evhttp_add_header(client_header, "TestCache", client->hit == 1 ? "Hit" : "Miss");
+    LOG_DEBUG("header, " << "TestCache:" << (client->hit == 1 ? "Hit" : "Miss"));
     client->reply_header_done = true;
     evhttp_send_reply_start(client->request, 200, "OK");
 }
@@ -78,7 +79,7 @@ void ReplyClient(RequestCtx* request_ctx)
         if ((*it)->body_piece_index >= mem_obj->body_piece_num - 1)
         {
             evhttp_send_reply_end((*it)->request);
-            LOG_INFO("reply client finished, free client:" << *it);
+            LOG_INFO("reply client finished, free client, request:" << (*it)->request);
             SAFELY_DELETE(*it);
             store_entry->store_clients_.erase(it++);
         }

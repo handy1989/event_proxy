@@ -18,6 +18,7 @@ struct StoreClient
     {
         body_piece_index = 0;
         reply_header_done = false;
+        reply_body_size = 0;
         hit = 0;
     }
 
