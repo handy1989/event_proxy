@@ -25,6 +25,7 @@ struct StoreClient
     unsigned int body_piece_index;
     bool reply_header_done;
     int hit;
+    int reply_body_size;
 };
 
 struct MemObj
@@ -57,6 +58,7 @@ public:
     std::list<StoreClient*> store_clients_;
 
     bool completion_;
+    int body_size_;
 
 private:
     std::string url_;

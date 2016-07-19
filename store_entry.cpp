@@ -6,6 +6,7 @@ using std::list;
 StoreEntry::StoreEntry(const string& url) : url_(url)
 {
     completion_ = false;
+    body_size_ = -1;
 }
 
 void StoreEntry::Lock()

@@ -19,11 +19,6 @@ struct RequestCtx
     StoreEntry* store_entry;
 };
 
-void ConnectRemote(RequestCtx* request_ctx);
-void ReplyClientHeader(StoreClient* client, struct evkeyvalq* headers);
-void ReplyClientBody(StoreClient* client, std::vector<struct evbuffer*>& bodies);
-void ReplyClient(RequestCtx* request_ctx);
-
 void HttpGenericCallback(struct evhttp_request* req, void* arg);
 void ReplyCompleteCallback(struct evhttp_request* request, void* arg);
 void ClientConnectionCloseCallback(struct evhttp_connection* connection, void* arg);
