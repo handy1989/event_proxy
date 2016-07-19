@@ -6,6 +6,11 @@
 
 struct RequestCtx
 {
+    RequestCtx()
+    {
+        clean_timer = NULL;
+        comm_timer = NULL;
+    }
     HttpService* http_service;
     char* url;
     struct evhttp_uri* uri;
@@ -15,6 +20,7 @@ struct RequestCtx
     struct evhttp_connection* remote_conn;
 
     struct event* clean_timer;
+    struct event* comm_timer;
 
     StoreEntry* store_entry;
 };

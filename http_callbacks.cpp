@@ -10,6 +10,11 @@
 #include <event.h>
 #include <stdlib.h>
 
+void ReplyClientCallback(int sock, short which, void* arg)
+{
+    ReplyClient((RequestCtx*)arg);
+}
+
 void HttpGenericCallback(struct evhttp_request* request, void* arg)
 {
     const struct evhttp_uri* evhttp_uri = evhttp_request_get_evhttp_uri(request);
@@ -46,7 +51,22 @@ void HttpGenericCallback(struct evhttp_request* request, void* arg)
     if (entry->completion_)
     {
         LOG_INFO("hit in cache, url:" << request_ctx->url << " client_num:" << client_num << " client:" << store_client);
-        ReplyClient(request_ctx);
+        struct timeval interval;
+        interval.tv_sec = 0;
+        interval.tv_usec = 10;
+        request_ctx->comm_timer = event_new(request_ctx->http_service->base(), -1, EV_PERSIST, ReplyClientCallback, request_ctx);
+        if (!request_ctx->comm_timer)
+        {   
+            LOG_ERROR("failed to create comm_timer, request_ctx:" << request_ctx
+                    << " client_request:" << request_ctx->client_request);
+            return ;
+        }
+        if (event_add(request_ctx->comm_timer, &interval) != 0)
+        {   
+            LOG_ERROR("failed to add comm_timer, request_ctx:" << request_ctx
+                    << " client_reqeust:" << request_ctx->client_request);
+            event_free(request_ctx->comm_timer);
+        }
         return ;
     }
 

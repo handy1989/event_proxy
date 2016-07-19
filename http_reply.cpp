@@ -82,12 +82,23 @@ void ReplyClient(RequestCtx* request_ctx)
             LOG_INFO("reply client finished, free client, request:" << (*it)->request);
             SAFELY_DELETE(*it);
             store_entry->store_clients_.erase(it++);
+
         }
         else
         {
             it++;
         }
         
+    }
+    if (store_entry->store_clients_.size() == 0)
+    {
+        if (request_ctx->comm_timer)
+        {
+            event_del(request_ctx->comm_timer);
+            event_free(request_ctx->comm_timer);
+            request_ctx->comm_timer = NULL;
+            LOG_INFO("free comm_timer, request:" << request_ctx->client_request);
+        }
     }
     store_entry->Unlock();
 }
