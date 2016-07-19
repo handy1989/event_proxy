@@ -5,7 +5,7 @@ using std::list;
 
 StoreEntry::StoreEntry(const string& url) : url_(url)
 {
-
+    completion_ = false;
 }
 
 void StoreEntry::Lock()

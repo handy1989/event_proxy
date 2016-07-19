@@ -2,6 +2,7 @@
 #define HTTP_CALLBACKS_H_
 
 #include "http_service.h"
+#include "store_entry.h"
 
 struct RequestCtx
 {
@@ -14,9 +15,14 @@ struct RequestCtx
     struct evhttp_connection* remote_conn;
 
     struct event* clean_timer;
+
+    StoreEntry* store_entry;
 };
 
 void ConnectRemote(RequestCtx* request_ctx);
+void ReplyClientHeader(StoreClient* client, struct evkeyvalq* headers);
+void ReplyClientBody(StoreClient* client, std::vector<struct evbuffer*>& bodies);
+void ReplyClient(RequestCtx* request_ctx);
 
 void HttpGenericCallback(struct evhttp_request* req, void* arg);
 void ReplyCompleteCallback(struct evhttp_request* request, void* arg);
@@ -28,5 +34,6 @@ void RemoteRequestErrorCallback(enum evhttp_request_error error, void* arg);
 void SendRemoteCompleteCallback(struct evhttp_request* request, void* arg);
 void RemoteConnectionCloseCallback(struct evhttp_connection* connection, void* arg);
 void FreeRemoteConnCallback(int sock, short which, void* arg);
+
 
 #endif // HTTP_CALLBACKS_H_

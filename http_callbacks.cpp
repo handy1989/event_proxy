@@ -7,6 +7,10 @@
 #include <event.h>
 #include <stdlib.h>
 
+using std::vector;
+using std::string;
+using std::list;
+
 #define SAFELY_DELETE(p) do{if(p)delete p; p = NULL;}while(0);
 #define MAX_URL_SIZE 8192
 
@@ -27,13 +31,27 @@ void HttpGenericCallback(struct evhttp_request* request, void* arg)
     LOG_DEBUG("url:" << request_ctx->url << " entry:" << entry);
 
     entry->Lock();
-    StoreClient* store_client = new StoreClient(request);
+    StoreClient* store_client = new StoreClient();
+    store_client->request = request;
     entry->AddClient(store_client);
     int client_num = entry->GetClientNum();
+    if (client_num > 1 || entry->completion_)
+    {
+        store_client->hit = 1;
+    }
     entry->Unlock();
 
     if (client_num > 1)
     {
+        // 正在处理相同请求
+        return ;
+    }
+
+    request_ctx->store_entry = entry;
+
+    if (entry->completion_)
+    {
+        ReplyClient(request_ctx);
         return ;
     }
 
@@ -87,9 +105,11 @@ void FreeRemoteConnCallback(int sock, short which, void* arg)
 void RemoteReadCallback(struct evhttp_request* response, void* arg)
 {
     RequestCtx* request_ctx = (RequestCtx*)arg;
-    evhttp_request* client_request = request_ctx->client_request;
+    StoreEntry* store_entry = request_ctx->store_entry;
+    store_entry->mem_obj_->body_piece_num = store_entry->mem_obj_->bodies.size();
+    ReplyClient(request_ctx);
+    store_entry->completion_ = true;
 
-    evhttp_send_reply_end(client_request);
     LOG_INFO("reply end, request_ctx:" << request_ctx << " response:" << response << " connection:" << request_ctx->remote_conn);
     if (!response)
     {
@@ -119,10 +139,84 @@ void RemoteReadCallback(struct evhttp_request* response, void* arg)
     return ;
 }
 
+void ReplyClientHeader(StoreClient* client, struct evkeyvalq* headers)
+{
+    struct evkeyvalq* client_header = evhttp_request_get_output_headers(client->request);
+    struct evkeyval* header;
+    LOG_DEBUG("reply client header:");
+    for (header = headers->tqh_first; header; header = header->next.tqe_next)
+    {
+        LOG_DEBUG("header, " << header->key << ":" << header->value);
+        evhttp_add_header(client_header, header->key, header->value);
+    }
+    evhttp_add_header(client_header, "TestCache", client->hit == 1 ? "Hit" : "Miss");
+    client->reply_header_done = true;
+    evhttp_send_reply_start(client->request, 200, "OK");
+}
+
+void ReplyClientBody(StoreClient* client, vector<struct evbuffer*>& bodies)
+{
+    while (client->body_piece_index < bodies.size())
+    {
+        int len = evbuffer_get_length(bodies[client->body_piece_index]);
+        char* buf = (char*)malloc(len);
+        evbuffer_copyout(bodies[client->body_piece_index], buf, len);
+        struct evbuffer* evbuf = evbuffer_new();
+        evbuffer_add(evbuf, buf, len);
+        evhttp_send_reply_chunk(client->request, evbuf);
+        ++client->body_piece_index;
+
+        free(buf);
+        evbuffer_free(evbuf);
+
+        LOG_DEBUG("reply body size:" << len);
+    }
+}
+
+void ReplyClient(RequestCtx* request_ctx)
+{
+    StoreEntry* store_entry = request_ctx->store_entry;
+    MemObj* mem_obj = store_entry->mem_obj_;
+
+    store_entry->Lock(); // 这个锁加的有点大，如果回复数据量很大，对其它请求会有影响
+    for (list<StoreClient*>::iterator it = store_entry->store_clients_.begin(); it != store_entry->store_clients_.end();)
+    {
+        if (mem_obj->headers)
+        {
+            // 已完成包头接收，给客户端回包头
+            if (!(*it)->reply_header_done)
+            {
+                ReplyClientHeader(*it, mem_obj->headers);
+            }
+        }
+        if ((*it)->body_piece_index < mem_obj->bodies.size())
+        {
+            ReplyClientBody(*it, mem_obj->bodies);
+        }
+        if ((*it)->body_piece_index >= mem_obj->body_piece_num - 1)
+        {
+            evhttp_send_reply_end((*it)->request);
+            SAFELY_DELETE(*it);
+            store_entry->store_clients_.erase(it++);
+        }
+        else
+        {
+            it++;
+        }
+        
+    }
+    store_entry->Unlock();
+}
+
 int ReadHeaderDoneCallback(struct evhttp_request* remote_rsp, void* arg)
 {
     RequestCtx* request_ctx = (RequestCtx*)arg;
-    evhttp_request* client_request = request_ctx->client_request;
+    StoreEntry* store_entry = request_ctx->store_entry;
+
+    store_entry->mem_obj_ = new MemObj();
+    MemObj* mem_obj = store_entry->mem_obj_;
+    mem_obj->headers = (struct evkeyvalq*)malloc(sizeof(*(mem_obj->headers)));
+    TAILQ_INIT(mem_obj->headers);
 
     struct evkeyvalq* request_headers = evhttp_request_get_input_headers(remote_rsp);
     struct evkeyval* header;
@@ -130,10 +224,11 @@ int ReadHeaderDoneCallback(struct evhttp_request* remote_rsp, void* arg)
     for (header = request_headers->tqh_first; header; header = header->next.tqe_next)
     {
         LOG_DEBUG("header, " << header->key << ":" << header->value);
-        evhttp_add_header(evhttp_request_get_output_headers(client_request), header->key, header->value);
+        evhttp_add_header(mem_obj->headers, header->key, header->value);
     }
-    evhttp_add_header(evhttp_request_get_output_headers(client_request), "test", "zhangmenghan");
-    evhttp_send_reply_start(client_request, 200, "OK");
+    evhttp_add_header(mem_obj->headers, "test", "zhangmenghan");
+
+    ReplyClient(request_ctx);
 
     return 0;
 }
@@ -141,14 +236,17 @@ int ReadHeaderDoneCallback(struct evhttp_request* remote_rsp, void* arg)
 void ReadChunkCallback(struct evhttp_request* remote_rsp, void* arg)
 {
     RequestCtx* request_ctx = (RequestCtx*)arg;
-    evhttp_request* client_request = request_ctx->client_request;
-
-    evbuffer* response_buf = evhttp_request_get_input_buffer(remote_rsp);
-
-    LOG_DEBUG("read_chunk_cb, read buf length:" << evbuffer_get_length(response_buf)
+    MemObj* mem_obj = request_ctx->store_entry->mem_obj_;
+    struct evbuffer* evbuf = evbuffer_new();
+    evbuffer_add_buffer(evbuf, evhttp_request_get_input_buffer(remote_rsp));
+    mem_obj->bodies.push_back(evbuf);
+    LOG_DEBUG("read_chunk_cb, read buf length:" << evbuffer_get_length(evbuf)
+            << " bodies size:" << mem_obj->bodies.size()
             << " client_reqeust:" << request_ctx->client_request
             << " remote_rsp:" << remote_rsp);
-    evhttp_send_reply_chunk(client_request, response_buf);
+    
+    ReplyClient(request_ctx);
+
 }
 
 void RemoteRequestErrorCallback(enum evhttp_request_error error, void* arg)

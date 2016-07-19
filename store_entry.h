@@ -3,23 +3,41 @@
 
 #include "lock.h"
 
+#include "event2/buffer.h"
+
+#include <sys/queue.h>
+#include <event.h>
+
 #include <string>
 #include <list>
+#include <vector>
 
-class StoreClient
+struct StoreClient
 {
-public:
-    StoreClient(struct evhttp_request* client_request) : client_request_(client_request), offset_(0) {}
-    struct evhttp_request* client_request_; 
-    int offset_;
+    StoreClient()
+    {
+        body_piece_index = 0;
+        reply_header_done = false;
+        hit = 0;
+    }
+
+    struct evhttp_request* request; 
+    unsigned int body_piece_index;
+    bool reply_header_done;
+    int hit;
 };
 
-class MemObj
+struct MemObj
 {
-public:
-    MemObj() : object_size_(0), data_(NULL) {}
-    int object_size_;
-    void* data_;
+    MemObj() 
+    {
+        headers = NULL;
+        body_piece_num = -1;
+    }
+
+    struct evkeyvalq* headers;
+    std::vector<struct evbuffer*> bodies;
+    unsigned int body_piece_num;
 };
 
 class StoreEntry
@@ -36,10 +54,12 @@ public:
     int GetClientNum();
 
     MemObj* mem_obj_;
+    std::list<StoreClient*> store_clients_;
+
+    bool completion_;
 
 private:
     std::string url_;
-    std::list<StoreClient*> store_clients_;
 
     SafeLock lock_;
 };
