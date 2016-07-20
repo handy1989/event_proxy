@@ -61,9 +61,12 @@ public:
     bool completion_;
     int body_size_;
 
-private:
+    int code_;
+    std::string code_str_;
+
     std::string url_;
 
+private:
     SafeLock lock_;
 };
 

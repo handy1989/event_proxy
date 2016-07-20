@@ -187,7 +187,11 @@ int ReadHeaderDoneCallback(struct evhttp_request* remote_rsp, void* arg)
         }
     }
     evhttp_add_header(mem_obj->headers, "test", "zhangmenghan");
-
+    
+    store_entry->code_ = evhttp_request_get_response_code(remote_rsp);
+    store_entry->code_str_ = evhttp_request_get_response_code_line(remote_rsp);
+    LOG_INFO("url:" << store_entry->url_ << " code:" << store_entry->code_
+            << " code_str:" << store_entry->code_str_);
     ReplyClient(request_ctx);
 
     return 0;

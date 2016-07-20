@@ -11,12 +11,12 @@ StoreEntry::StoreEntry(const string& url) : url_(url)
 
 void StoreEntry::Lock()
 {
-    //lock_.lock();
+    lock_.lock();
 }
 
 void StoreEntry::Unlock()
 {
-    //lock_.unlock();
+    lock_.unlock();
 }
 
 void StoreEntry::AddClient(StoreClient* client)

@@ -30,7 +30,7 @@ void ReplyClientHeader(StoreClient* client, StoreEntry* store_entry)
     evhttp_add_header(client_header, "TestCache", client->hit == 1 ? "Hit" : "Miss");
     LOG_DEBUG("header, " << "TestCache:" << (client->hit == 1 ? "Hit" : "Miss"));
     client->reply_header_done = true;
-    evhttp_send_reply_start(client->request, 200, "OK");
+    evhttp_send_reply_start(client->request, store_entry->code_, store_entry->code_str_.c_str());
 }
 
 void ReplyClientBody(StoreClient* client, StoreEntry* store_entry)
@@ -51,7 +51,7 @@ void ReplyClientBody(StoreClient* client, StoreEntry* store_entry)
 
         client->reply_body_size += len;
 
-        LOG_DEBUG("reply body, size:" << len << " client:" << client 
+        LOG_DEBUG("reply body, size:" << len << " client:" << client->request
                 << " reply_size:" << client->reply_body_size << " body_size:" << store_entry->body_size_);
     }
 }
