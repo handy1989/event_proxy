@@ -12,6 +12,14 @@
 #include <list>
 #include <vector>
 
+enum StoreStatus
+{
+    STORE_INIT = 0,
+    STORE_PENDING,
+    STORE_FINISHED,
+    STORE_ERROR
+};
+
 struct StoreClient
 {
     StoreClient()
@@ -54,6 +62,7 @@ public:
     void AddClient(StoreClient*);
     void DelClient(StoreClient*);
     int GetClientNum();
+    std::string StatusStr();
 
     MemObj* mem_obj_;
     std::list<StoreClient*> store_clients_;
@@ -65,6 +74,8 @@ public:
     std::string code_str_;
 
     std::string url_;
+
+    StoreStatus status_;
 
 private:
     SafeLock lock_;

@@ -56,9 +56,7 @@ void ConnectRemote(RequestCtx* request_ctx)
     request_ctx->remote_request = request;
     request_ctx->remote_conn = connection;
 
-    char* url = (char*)malloc(8192);
-    evhttp_make_request(connection, request, EVHTTP_REQ_GET, evhttp_uri_join(const_cast<struct evhttp_uri*>(request_ctx->uri), url, 8192));
-    free(url);
+    evhttp_make_request(connection, request, EVHTTP_REQ_GET, request_ctx->url);
 
     LOG_DEBUG("make request finished. request_ctx:" << request_ctx);
 }

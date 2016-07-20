@@ -22,6 +22,8 @@ struct RequestCtx
     struct event* clean_timer;
     struct event* comm_timer;
 
+    StoreClient* store_client;
+
     StoreEntry* store_entry;
 };
 

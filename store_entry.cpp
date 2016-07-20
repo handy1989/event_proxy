@@ -7,6 +7,7 @@ StoreEntry::StoreEntry(const string& url) : url_(url)
 {
     completion_ = false;
     body_size_ = -1;
+    status_ = STORE_INIT;
 }
 
 void StoreEntry::Lock()
@@ -38,5 +39,27 @@ void StoreEntry::DelClient(StoreClient* client)
             store_clients_.erase(it);
             break;
         }
+    }
+}
+
+string StoreEntry::StatusStr()
+{
+    switch (status_)
+    {
+        case STORE_INIT:
+            return "STORE_INIT";
+            break;
+        case STORE_PENDING:
+            return "STORE_PENDING";
+            break;
+        case STORE_FINISHED:
+            return "STORE_FINISHED";
+            break;
+        case STORE_ERROR:
+            return "STORE_ERROR";
+            break;
+        default:
+            return "STORE_UNKOWN";
+            break;
     }
 }

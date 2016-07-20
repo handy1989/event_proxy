@@ -43,6 +43,7 @@ void ReplyClientBody(StoreClient* client, StoreEntry* store_entry)
         evbuffer_copyout(bodies[client->body_piece_index], buf, len);
         struct evbuffer* evbuf = evbuffer_new();
         evbuffer_add(evbuf, buf, len);
+        LOG_DEBUG("begin reply chunk, client_request:" << client->request);
         evhttp_send_reply_chunk(client->request, evbuf);
         ++client->body_piece_index;
 
@@ -60,47 +61,54 @@ void ReplyClient(RequestCtx* request_ctx)
 {
     StoreEntry* store_entry = request_ctx->store_entry;
     MemObj* mem_obj = store_entry->mem_obj_;
+    StoreClient* store_client = request_ctx->store_client;
 
-    store_entry->Lock(); // 这个锁加的有点大，如果回复数据量很大，对其它请求会有影响
+    store_entry->Lock();
     LOG_INFO("lock entry:" << store_entry);
-    for (list<StoreClient*>::iterator it = store_entry->store_clients_.begin(); it != store_entry->store_clients_.end();)
+    if (store_entry->status_ == STORE_ERROR)
+    {
+        // todo
+        //if (store_client->reply_header_done)
+        //{
+        //    evhttp_send_reply_end(store_client->request);
+        //}
+        //else
+        //{
+        //    evhttp_send_error(store_client->request, "400", "Bad Request");
+        //}
+        //return ;
+    }
+    else
     {
         if (mem_obj->headers)
         {
-            // 已完成包头接收，给客户端回包头
-            if (!(*it)->reply_header_done)
+            if (!store_client->reply_header_done)
             {
-                ReplyClientHeader(*it, store_entry);
+                ReplyClientHeader(store_client, store_entry);
             }
         }
-        if ((*it)->body_piece_index < mem_obj->bodies.size())
+        if (store_client->body_piece_index < mem_obj->bodies.size())
         {
-            ReplyClientBody(*it, store_entry);
+            ReplyClientBody(store_client, store_entry);
         }
-        if ((*it)->body_piece_index >= mem_obj->body_piece_num - 1)
+        if (store_client->body_piece_index >= mem_obj->body_piece_num - 1)
         {
-            evhttp_send_reply_end((*it)->request);
-            LOG_INFO("reply client finished, free client, request:" << (*it)->request);
-            SAFELY_DELETE(*it);
-            store_entry->store_clients_.erase(it++);
+            evhttp_send_reply_end(store_client->request);
+            if (request_ctx->comm_timer)
+            {
+                event_del(request_ctx->comm_timer);
+                event_free(request_ctx->comm_timer);
+                request_ctx->comm_timer = NULL;
+                LOG_INFO("free comm_timer, request:" << request_ctx->client_request);
 
-        }
-        else
-        {
-            it++;
-        }
-        
-    }
-    if (store_entry->store_clients_.size() == 0)
-    {
-        if (request_ctx->comm_timer)
-        {
-            event_del(request_ctx->comm_timer);
-            event_free(request_ctx->comm_timer);
-            request_ctx->comm_timer = NULL;
-            LOG_INFO("free comm_timer, request:" << request_ctx->client_request);
+            }
+            store_entry->DelClient(store_client);
+            LOG_INFO("reply client finished, delele client, now client_num:" << store_entry->GetClientNum()
+                    << " store_status:" << store_entry->StatusStr()
+                    << " request:" << store_client->request);
         }
     }
+
     LOG_INFO("unlock entry:" << store_entry);
     store_entry->Unlock();
 }

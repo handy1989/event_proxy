@@ -34,35 +34,59 @@ void HttpGenericCallback(struct evhttp_request* request, void* arg)
     store_client->request = request;
     entry->AddClient(store_client);
     LOG_DEBUG("add client, request:" << request);
-    int client_num = entry->GetClientNum();
-    if (client_num > 1 || entry->completion_)
+    StoreStatus status = entry->status_;
+    if (status == STORE_INIT)
     {
-        if (client_num > 1)
-        {
-            LOG_INFO("deliver to other process, url:" << request_ctx->url << " client_num:" << client_num << " client_request:" << store_client->request);
-        }
-        else if (entry->completion_)
-        {
-            LOG_INFO("hit in cache, url:" << request_ctx->url << " client_num:" << client_num << " client:" << store_client);
-        }
-        store_client->hit = 1;
+        entry->status_ = STORE_PENDING;
+        LOG_INFO("process url:" << request_ctx->url << " client_num:" << entry->GetClientNum()
+                << " client_request:" << store_client->request << " request_ctx:" << request_ctx);
     }
+    else if (status == STORE_PENDING)
+    {
+        LOG_INFO("wait for other processer, url:" << request_ctx->url
+                << " client_num:" << entry->GetClientNum()
+                << " client_request:" << store_client->request);
+    }
+    else if (status == STORE_FINISHED)
+    {
+        LOG_INFO("hit in cache, url:" << request_ctx->url
+                << " client_num:" << entry->GetClientNum() 
+                << " client_request:" << store_client->request);
+
+    }
+    else if (status == STORE_ERROR)
+    {
+        LOG_INFO("store_entry error, url:" << request_ctx->url
+                << " client_num:" << entry->GetClientNum()
+                << " client_request:" << store_client->request);
+    }
+    //if (client_num > 1 || entry->completion_)
+    //{
+    //    if (client_num > 1)
+    //    {
+    //        LOG_INFO("deliver to other process, url:" << request_ctx->url << " client_num:" << client_num << " client_request:" << store_client->request);
+    //    }
+    //    else if (entry->completion_)
+    //    {
+    //        LOG_INFO("hit in cache, url:" << request_ctx->url << " client_num:" << client_num << " client:" << store_client);
+    //    }
+    //    store_client->hit = 1;
+    //}
+    //else
+    //{
+    //    LOG_INFO("process url:" << request_ctx->url << " client_num:" << client_num << " client_request:" << store_client->request << " request_ctx:" << request_ctx);
+    //}
     LOG_DEBUG("unlock entry:" << entry);
     entry->Unlock();
 
-    if (client_num > 1)
-    {
-        // 正在处理相同请求
-        return ;
-    }
-
+    request_ctx->store_client = store_client;
     request_ctx->store_entry = entry;
 
-    if (entry->completion_)
+    if (status != STORE_INIT)
     {
         struct timeval interval;
         interval.tv_sec = 0;
-        interval.tv_usec = 10;
+        interval.tv_usec = 1000;
         request_ctx->comm_timer = event_new(request_ctx->http_service->base(), -1, EV_PERSIST, ReplyClientCallback, request_ctx);
         if (!request_ctx->comm_timer)
         {   
@@ -77,9 +101,8 @@ void HttpGenericCallback(struct evhttp_request* request, void* arg)
             event_free(request_ctx->comm_timer);
         }
         return ;
+        
     }
-
-    LOG_INFO("process url:" << request_ctx->url << " client_num:" << client_num << " client_request:" << store_client->request << " request_ctx:" << request_ctx);
 
     evhttp_request_set_on_complete_cb(request, ReplyCompleteCallback, request_ctx);
     evhttp_connection_set_closecb(request_ctx->client_conn, ClientConnectionCloseCallback, request_ctx);
@@ -131,9 +154,11 @@ void RemoteReadCallback(struct evhttp_request* response, void* arg)
 {
     RequestCtx* request_ctx = (RequestCtx*)arg;
     StoreEntry* store_entry = request_ctx->store_entry;
+    store_entry->Lock();
     store_entry->mem_obj_->body_piece_num = store_entry->mem_obj_->bodies.size();
+    store_entry->status_ = STORE_FINISHED;
+    store_entry->Unlock();
     ReplyClient(request_ctx);
-    store_entry->completion_ = true;
 
     LOG_INFO("reply end, request_ctx:" << request_ctx << " response:" << response << " connection:" << request_ctx->remote_conn);
     if (!response)
@@ -169,6 +194,11 @@ int ReadHeaderDoneCallback(struct evhttp_request* remote_rsp, void* arg)
     RequestCtx* request_ctx = (RequestCtx*)arg;
     StoreEntry* store_entry = request_ctx->store_entry;
 
+    store_entry->code_ = evhttp_request_get_response_code(remote_rsp);
+    store_entry->code_str_ = evhttp_request_get_response_code_line(remote_rsp);
+    LOG_INFO("url:" << store_entry->url_ << " code:" << store_entry->code_
+            << " code_str:" << store_entry->code_str_);
+
     store_entry->mem_obj_ = new MemObj();
     MemObj* mem_obj = store_entry->mem_obj_;
     mem_obj->headers = (struct evkeyvalq*)malloc(sizeof(*(mem_obj->headers)));
@@ -188,10 +218,6 @@ int ReadHeaderDoneCallback(struct evhttp_request* remote_rsp, void* arg)
     }
     evhttp_add_header(mem_obj->headers, "test", "zhangmenghan");
     
-    store_entry->code_ = evhttp_request_get_response_code(remote_rsp);
-    store_entry->code_str_ = evhttp_request_get_response_code_line(remote_rsp);
-    LOG_INFO("url:" << store_entry->url_ << " code:" << store_entry->code_
-            << " code_str:" << store_entry->code_str_);
     ReplyClient(request_ctx);
 
     return 0;
