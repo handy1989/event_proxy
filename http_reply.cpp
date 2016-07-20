@@ -84,8 +84,9 @@ void ReplyClient(RequestCtx* request_ctx)
     StoreEntry* store_entry = request_ctx->store_entry;
     MemObj* mem_obj = store_entry->mem_obj_;
     StoreClient* store_client = request_ctx->store_client;
+    bool delete_client = false;
 
-    store_entry->Lock();
+    store_entry->Lock(READ_LOCKER);
     LOG_DEBUG("lock entry:" << store_entry);
     if (store_entry->status_ == STORE_ERROR)
     {
@@ -127,7 +128,8 @@ void ReplyClient(RequestCtx* request_ctx)
                 LOG_INFO("free comm_timer, request:" << request_ctx->client_request);
 
             }
-            store_entry->DelClient(store_client);
+            delete_client = true;
+            //store_entry->DelClient(store_client);
             LOG_INFO("reply client finished, delele client, now client_num:" << store_entry->GetClientNum()
                     << " store_status:" << store_entry->StatusStr()
                     << " request:" << store_client->request);
@@ -136,4 +138,16 @@ void ReplyClient(RequestCtx* request_ctx)
 
     LOG_DEBUG("unlock entry:" << store_entry);
     store_entry->Unlock();
+
+    if (delete_client)
+    {
+        store_entry->Lock(WRITE_LOCKER);
+        LOG_DEBUG("lock entry:" << store_entry);
+
+        store_entry->DelClient(store_client);
+
+        LOG_DEBUG("unlock entry:" << store_entry);
+        store_entry->Unlock();
+
+    }
 }

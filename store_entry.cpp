@@ -10,9 +10,16 @@ StoreEntry::StoreEntry(const string& url) : url_(url)
     status_ = STORE_INIT;
 }
 
-void StoreEntry::Lock()
+void StoreEntry::Lock(const ELockType type)
 {
-    lock_.lock();
+    if (type == READ_LOCKER)
+    {
+        lock_.rdlock();
+    }
+    else
+    {
+        lock_.wrlock();
+    }
 }
 
 void StoreEntry::Unlock()

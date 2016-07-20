@@ -56,7 +56,7 @@ public:
     StoreEntry(const std::string& url);
     ~StoreEntry();
 
-    void Lock();
+    void Lock(const ELockType type);
     void Unlock();
 
     void AddClient(StoreClient*);
@@ -78,7 +78,7 @@ public:
     StoreStatus status_;
 
 private:
-    SafeLock lock_;
+    RWLock lock_;
 };
 
 #endif // STORE_ENTRY_H_

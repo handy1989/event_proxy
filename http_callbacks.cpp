@@ -29,7 +29,7 @@ void HttpGenericCallback(struct evhttp_request* request, void* arg)
 
     StoreEntry* entry = SingletonCacheMgr::Instance().GetStoreEntry(request_ctx->url);
 
-    entry->Lock();
+    entry->Lock(WRITE_LOCKER);
     LOG_DEBUG("lock entry:" << entry);
     StoreClient* store_client = new StoreClient();
     store_client->request = request;
@@ -146,7 +146,7 @@ void RemoteReadCallback(struct evhttp_request* response, void* arg)
 {
     RequestCtx* request_ctx = (RequestCtx*)arg;
     StoreEntry* store_entry = request_ctx->store_entry;
-    store_entry->Lock();
+    store_entry->Lock(WRITE_LOCKER);
     store_entry->mem_obj_->body_piece_num = store_entry->mem_obj_->bodies.size();
     store_entry->status_ = STORE_FINISHED;
     store_entry->Unlock();
@@ -186,7 +186,7 @@ int ReadHeaderDoneCallback(struct evhttp_request* remote_rsp, void* arg)
     RequestCtx* request_ctx = (RequestCtx*)arg;
     StoreEntry* store_entry = request_ctx->store_entry;
 
-    store_entry->Lock();
+    store_entry->Lock(WRITE_LOCKER);
     LOG_DEBUG("lock entry:" << store_entry);
 
     store_entry->code_ = evhttp_request_get_response_code(remote_rsp);
@@ -226,7 +226,7 @@ void ReadChunkCallback(struct evhttp_request* remote_rsp, void* arg)
     RequestCtx* request_ctx = (RequestCtx*)arg;
     StoreEntry* store_entry = request_ctx->store_entry;
 
-    store_entry->Lock();
+    store_entry->Lock(WRITE_LOCKER);
     LOG_DEBUG("lock entry:" << store_entry);
 
     MemObj* mem_obj = request_ctx->store_entry->mem_obj_;
