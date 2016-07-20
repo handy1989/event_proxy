@@ -46,12 +46,14 @@ void HttpGenericCallback(struct evhttp_request* request, void* arg)
         LOG_INFO("wait for other processer, url:" << request_ctx->url
                 << " client_num:" << entry->GetClientNum()
                 << " client_request:" << store_client->request);
+        store_client->hit = 1;
     }
     else if (status == STORE_FINISHED)
     {
         LOG_INFO("hit in cache, url:" << request_ctx->url
                 << " client_num:" << entry->GetClientNum() 
                 << " client_request:" << store_client->request);
+        store_client->hit = 1;
 
     }
     else if (status == STORE_ERROR)
