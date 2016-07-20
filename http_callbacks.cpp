@@ -71,6 +71,11 @@ void HttpGenericCallback(struct evhttp_request* request, void* arg)
 
     if (status != STORE_INIT)
     {
+        if (status == STORE_FINISHED)
+        {
+            ReplyClient(request_ctx);
+            return ;
+        }
         struct timeval interval;
         interval.tv_sec = 0;
         interval.tv_usec = 1000;
