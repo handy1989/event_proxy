@@ -21,15 +21,16 @@ void ReplyClientHeader(StoreClient* client, StoreEntry* store_entry)
     struct evkeyvalq* headers = store_entry->mem_obj_->headers;
     struct evkeyvalq* client_header = evhttp_request_get_output_headers(client->request);
     struct evkeyval* header;
+
     LOG_DEBUG("reply client header, client:" << client);
-    for (header = headers->tqh_first; header; header = header->next.tqe_next)
+    TAILQ_FOREACH(header, headers, next)
     {
         LOG_DEBUG("header, " << header->key << ":" << header->value);
         evhttp_add_header(client_header, header->key, header->value);
     }
     evhttp_add_header(client_header, "TestCache", client->hit == 1 ? "Hit" : "Miss");
     LOG_DEBUG("header, " << "TestCache:" << (client->hit == 1 ? "Hit" : "Miss"));
-    client->reply_header_done = true;
+
     evhttp_send_reply_start(client->request, store_entry->code_, store_entry->code_str_.c_str());
 }
 
@@ -43,14 +44,14 @@ void ReplyClientBody(StoreClient* client, StoreEntry* store_entry)
         evbuffer_copyout(bodies[client->body_piece_index], buf, len);
         struct evbuffer* evbuf = evbuffer_new();
         evbuffer_add(evbuf, buf, len);
+
         LOG_DEBUG("begin reply chunk, client_request:" << client->request);
         evhttp_send_reply_chunk(client->request, evbuf);
         ++client->body_piece_index;
+        client->reply_body_size += len;
 
         free(buf);
         evbuffer_free(evbuf);
-
-        client->reply_body_size += len;
 
         LOG_DEBUG("reply body, size:" << len << " client:" << client->request
                 << " reply_size:" << client->reply_body_size << " body_size:" << store_entry->body_size_);
@@ -64,7 +65,7 @@ void ReplyClient(RequestCtx* request_ctx)
     StoreClient* store_client = request_ctx->store_client;
 
     store_entry->Lock();
-    LOG_INFO("lock entry:" << store_entry);
+    LOG_DEBUG("lock entry:" << store_entry);
     if (store_entry->status_ == STORE_ERROR)
     {
         // todo
@@ -85,6 +86,9 @@ void ReplyClient(RequestCtx* request_ctx)
             if (!store_client->reply_header_done)
             {
                 ReplyClientHeader(store_client, store_entry);
+                store_client->reply_header_done = true;
+                LOG_INFO("reply header finished, client_request:" << store_client->request
+                        << " now client_num:" << store_entry->GetClientNum());
             }
         }
         if (store_client->body_piece_index < mem_obj->bodies.size())
@@ -109,6 +113,6 @@ void ReplyClient(RequestCtx* request_ctx)
         }
     }
 
-    LOG_INFO("unlock entry:" << store_entry);
+    LOG_DEBUG("unlock entry:" << store_entry);
     store_entry->Unlock();
 }

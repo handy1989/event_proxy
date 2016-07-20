@@ -28,6 +28,7 @@ void HttpGenericCallback(struct evhttp_request* request, void* arg)
     evhttp_uri_join(request_ctx->uri, request_ctx->url, MAX_URL_SIZE);
 
     StoreEntry* entry = SingletonCacheMgr::Instance().GetStoreEntry(request_ctx->url);
+
     entry->Lock();
     LOG_DEBUG("lock entry:" << entry);
     StoreClient* store_client = new StoreClient();
@@ -62,22 +63,6 @@ void HttpGenericCallback(struct evhttp_request* request, void* arg)
                 << " client_num:" << entry->GetClientNum()
                 << " client_request:" << store_client->request);
     }
-    //if (client_num > 1 || entry->completion_)
-    //{
-    //    if (client_num > 1)
-    //    {
-    //        LOG_INFO("deliver to other process, url:" << request_ctx->url << " client_num:" << client_num << " client_request:" << store_client->request);
-    //    }
-    //    else if (entry->completion_)
-    //    {
-    //        LOG_INFO("hit in cache, url:" << request_ctx->url << " client_num:" << client_num << " client:" << store_client);
-    //    }
-    //    store_client->hit = 1;
-    //}
-    //else
-    //{
-    //    LOG_INFO("process url:" << request_ctx->url << " client_num:" << client_num << " client_request:" << store_client->request << " request_ctx:" << request_ctx);
-    //}
     LOG_DEBUG("unlock entry:" << entry);
     entry->Unlock();
 
@@ -196,6 +181,9 @@ int ReadHeaderDoneCallback(struct evhttp_request* remote_rsp, void* arg)
     RequestCtx* request_ctx = (RequestCtx*)arg;
     StoreEntry* store_entry = request_ctx->store_entry;
 
+    store_entry->Lock();
+    LOG_DEBUG("lock entry:" << store_entry);
+
     store_entry->code_ = evhttp_request_get_response_code(remote_rsp);
     store_entry->code_str_ = evhttp_request_get_response_code_line(remote_rsp);
     LOG_INFO("url:" << store_entry->url_ << " code:" << store_entry->code_
@@ -209,7 +197,7 @@ int ReadHeaderDoneCallback(struct evhttp_request* remote_rsp, void* arg)
     struct evkeyvalq* request_headers = evhttp_request_get_input_headers(remote_rsp);
     struct evkeyval* header;
     LOG_DEBUG("read remote header done:");
-    for (header = request_headers->tqh_first; header; header = header->next.tqe_next)
+    TAILQ_FOREACH(header, request_headers, next)
     {
         LOG_DEBUG("header, " << header->key << ":" << header->value);
         evhttp_add_header(mem_obj->headers, header->key, header->value);
@@ -219,6 +207,9 @@ int ReadHeaderDoneCallback(struct evhttp_request* remote_rsp, void* arg)
         }
     }
     evhttp_add_header(mem_obj->headers, "test", "zhangmenghan");
+
+    LOG_DEBUG("unlock entry:" << store_entry);
+    store_entry->Unlock();
     
     ReplyClient(request_ctx);
 
@@ -228,6 +219,11 @@ int ReadHeaderDoneCallback(struct evhttp_request* remote_rsp, void* arg)
 void ReadChunkCallback(struct evhttp_request* remote_rsp, void* arg)
 {
     RequestCtx* request_ctx = (RequestCtx*)arg;
+    StoreEntry* store_entry = request_ctx->store_entry;
+
+    store_entry->Lock();
+    LOG_DEBUG("lock entry:" << store_entry);
+
     MemObj* mem_obj = request_ctx->store_entry->mem_obj_;
     struct evbuffer* evbuf = evbuffer_new();
     evbuffer_add_buffer(evbuf, evhttp_request_get_input_buffer(remote_rsp));
@@ -236,6 +232,9 @@ void ReadChunkCallback(struct evhttp_request* remote_rsp, void* arg)
             << " bodies size:" << mem_obj->bodies.size()
             << " client_reqeust:" << request_ctx->client_request
             << " remote_rsp:" << remote_rsp);
+
+    LOG_DEBUG("unlock entry:" << store_entry);
+    store_entry->Unlock();
     
     ReplyClient(request_ctx);
 
