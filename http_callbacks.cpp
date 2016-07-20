@@ -29,20 +29,30 @@ void HttpGenericCallback(struct evhttp_request* request, void* arg)
 
     StoreEntry* entry = SingletonCacheMgr::Instance().GetStoreEntry(request_ctx->url);
     entry->Lock();
+    LOG_DEBUG("lock entry:" << entry);
     StoreClient* store_client = new StoreClient();
     store_client->request = request;
     entry->AddClient(store_client);
+    LOG_DEBUG("add client, request:" << request);
     int client_num = entry->GetClientNum();
     if (client_num > 1 || entry->completion_)
     {
+        if (client_num > 1)
+        {
+            LOG_INFO("deliver to other process, url:" << request_ctx->url << " client_num:" << client_num << " client_request:" << store_client->request);
+        }
+        else if (entry->completion_)
+        {
+            LOG_INFO("hit in cache, url:" << request_ctx->url << " client_num:" << client_num << " client:" << store_client);
+        }
         store_client->hit = 1;
     }
+    LOG_DEBUG("unlock entry:" << entry);
     entry->Unlock();
 
     if (client_num > 1)
     {
         // 正在处理相同请求
-        LOG_INFO("deliver to other process, url:" << request_ctx->url << " client_num:" << client_num << " client_request:" << store_client->request);
         return ;
     }
 
@@ -50,7 +60,6 @@ void HttpGenericCallback(struct evhttp_request* request, void* arg)
 
     if (entry->completion_)
     {
-        LOG_INFO("hit in cache, url:" << request_ctx->url << " client_num:" << client_num << " client:" << store_client);
         struct timeval interval;
         interval.tv_sec = 0;
         interval.tv_usec = 10;

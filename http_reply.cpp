@@ -62,6 +62,7 @@ void ReplyClient(RequestCtx* request_ctx)
     MemObj* mem_obj = store_entry->mem_obj_;
 
     store_entry->Lock(); // 这个锁加的有点大，如果回复数据量很大，对其它请求会有影响
+    LOG_INFO("lock entry:" << store_entry);
     for (list<StoreClient*>::iterator it = store_entry->store_clients_.begin(); it != store_entry->store_clients_.end();)
     {
         if (mem_obj->headers)
@@ -100,5 +101,6 @@ void ReplyClient(RequestCtx* request_ctx)
             LOG_INFO("free comm_timer, request:" << request_ctx->client_request);
         }
     }
+    LOG_INFO("unlock entry:" << store_entry);
     store_entry->Unlock();
 }
