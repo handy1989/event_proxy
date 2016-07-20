@@ -34,6 +34,27 @@ void ReplyClientHeader(StoreClient* client, StoreEntry* store_entry)
     evhttp_send_reply_start(client->request, store_entry->code_, store_entry->code_str_.c_str());
 }
 
+void ReplyClientBody2(StoreClient* client, StoreEntry* store_entry)
+{
+    // 采用evbuffer引用，避免内存拷贝，目前只在单线程下可用
+    struct evhttp_connection* evcon = evhttp_request_get_connection(client->request);
+    struct bufferevent* bev = evhttp_connection_get_bufferevent(evcon);
+    struct evbuffer* output = bufferevent_get_output(bev);
+
+    vector<struct evbuffer*>& bodies = store_entry->mem_obj_->bodies;
+    while (client->body_piece_index < bodies.size())
+    {   
+        int len = evbuffer_get_length(bodies[client->body_piece_index]);
+        evbuffer_add_buffer_reference(output, bodies[client->body_piece_index]);
+
+        ++client->body_piece_index;
+        client->reply_body_size += len;
+
+        LOG_DEBUG("reply body, size:" << len << " client_request:" << client->request
+                << " reply_size:" << client->reply_body_size << " body_size:" << store_entry->body_size_);
+    }   
+}
+
 void ReplyClientBody(StoreClient* client, StoreEntry* store_entry)
 {
     vector<struct evbuffer*>& bodies = store_entry->mem_obj_->bodies;
