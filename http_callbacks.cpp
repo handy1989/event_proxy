@@ -27,6 +27,8 @@ void HttpGenericCallback(struct evhttp_request* request, void* arg)
     request_ctx->url = (char*)malloc(MAX_URL_SIZE);
     evhttp_uri_join(request_ctx->uri, request_ctx->url, MAX_URL_SIZE);
 
+    LOG_DEBUG("url:" << request_ctx->url << " command:" << evhttp_request_get_command(request));
+
     StoreEntry* entry = SingletonCacheMgr::Instance().GetStoreEntry(request_ctx->url);
 
     entry->Lock(WRITE_LOCKER);

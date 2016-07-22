@@ -38,6 +38,8 @@ bool HttpService::Init()
             break;
         }
 
+        evhttp_set_allowed_methods(http_server_, EVHTTP_REQ_CONNECT);
+
         if (evhttp_accept_socket(http_server_, sock_) != 0)
         {
             LOG_ERROR("accept socket failed!");

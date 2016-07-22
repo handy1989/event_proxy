@@ -129,7 +129,6 @@ void ReplyClient(RequestCtx* request_ctx)
 
             }
             delete_client = true;
-            //store_entry->DelClient(store_client);
             LOG_INFO("reply client finished, delele client, now client_num:" << store_entry->GetClientNum()
                     << " store_status:" << store_entry->StatusStr()
                     << " request:" << store_client->request);
