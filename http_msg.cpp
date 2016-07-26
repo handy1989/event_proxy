@@ -8,6 +8,7 @@ const char *RequestMethodStr[] =
     "NONE",
     "GET",
     "POST",
+    "CONNECT",
     NULL
 };
 

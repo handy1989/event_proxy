@@ -202,3 +202,68 @@ void event_remote_cb(struct bufferevent* bev, short events, void* arg)
         LOG_DEBUG("free remote:" << bev);
     }
 }
+
+void event_remote_tunnel_cb(struct bufferevent* bev, short events, void* arg)
+{
+    if (events & BEV_EVENT_CONNECTED) 
+    {
+        LOG_INFO("connect tunnel okay");
+        BufferContext* buffer_context = GetRemoteBufferContext(bev);
+        if (buffer_context)
+        {
+            LOG_DEBUG("reply established, client:" << buffer_context->client);
+            struct evbuffer* client_output = bufferevent_get_output(buffer_context->client);
+            evbuffer_add_printf(client_output, "HTTP/1.0 200 Connection established\r\n");
+            evbuffer_add_printf(client_output, "\r\n");
+        }
+    } 
+    else if (events & (BEV_EVENT_ERROR|BEV_EVENT_EOF)) 
+    {
+        if (events & BEV_EVENT_ERROR) 
+        {
+            int err = bufferevent_socket_get_dns_error(bev);
+            if (err)
+            {
+                LOG_ERROR("DNS error:" << evutil_gai_strerror(err));
+                BufferContext* buffer_context = GetRemoteBufferContext(bev);
+                if (buffer_context)
+                {
+                    buffer_context->response_status = 400;
+                    bufferevent_enable(buffer_context->client, EV_WRITE);
+                }
+            }
+        }
+        bufferevent_free(bev);
+        LOG_DEBUG("free remote:" << bev);
+    }
+}
+
+void read_remote_tunnel_cb(struct bufferevent* bev, void* arg)
+{
+
+    LOG_DEBUG("call read_remote_tunnel_cb");
+    //char* line = evbuffer_readln(bufferevent_get_input(bev), NULL, EVBUFFER_EOL_CRLF_STRICT);
+    //if (line)
+    //    LOG_DEBUG("read remote line:" << line);
+    //return ;
+
+    BufferContext* buffer_context = GetRemoteBufferContext(bev);
+    if (!buffer_context)
+    {
+        bufferevent_disable(bev, EV_READ);
+        return ;
+    }
+
+    assert(buffer_context->remote == bev);
+
+
+    struct evbuffer* remote_input = bufferevent_get_input(buffer_context->remote);
+    struct evbuffer* client_output = bufferevent_get_output(buffer_context->client);
+
+    LOG_DEBUG("read remote tunnel len:" << evbuffer_get_length(remote_input) 
+            << ", client:" << buffer_context->client
+            << " remote:" << buffer_context->remote);
+
+    evbuffer_add_buffer(client_output, remote_input);
+
+}

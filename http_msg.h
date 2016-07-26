@@ -10,7 +10,8 @@ enum method_t
 {
     METHOD_NONE,		/* 000 */
     METHOD_GET,			/* 001 */
-    METHOD_POST
+    METHOD_POST,
+    METHOD_CONNECT
 };
 
 

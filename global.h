@@ -17,7 +17,8 @@ struct BufferContext
         read_header_finished(false),
         write_remote_finished(false),
         read_remote_body_finished(false),
-        client(NULL), remote(NULL), http_request(NULL), http_response(NULL) {}
+        client(NULL), remote(NULL), http_request(NULL), http_response(NULL),
+        tunnel(false) {}
 
     bufferevent* client;
     bufferevent* remote;
@@ -36,6 +37,9 @@ struct BufferContext
     HttpResponse* http_response;
     bool write_remote_finished;
     bool read_remote_body_finished;
+
+    bool tunnel;
+
 };
 
 void AddClientBufferContext(bufferevent* bev, BufferContext* buffer_context);

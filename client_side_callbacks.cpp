@@ -72,6 +72,17 @@ void client_read_cb(struct bufferevent *bev, void *ctx)
         return ;
     }
     assert(buffer_context->client == bev);
+
+    if (buffer_context->tunnel)
+    {
+        struct evbuffer* client_input = bufferevent_get_input(bev);
+        struct evbuffer* remote_output = bufferevent_get_output(buffer_context->remote);
+
+        LOG_DEBUG("read client tunnel len:" << evbuffer_get_length(client_input) << ", client:" << buffer_context->client
+                << " remote:" << buffer_context->remote);
+        evbuffer_add_buffer(remote_output, client_input);
+        return ;
+    }
    
     struct evbuffer *input = bufferevent_get_input(bev);
     HttpRequest* http_request = buffer_context->http_request;
@@ -175,6 +186,8 @@ void accept_error_cb(struct evconnlistener *listener, void *ctx)
         event_base_loopexit(base, NULL);
 }
 
+
+
 void ConnectRemote(BufferContext* buffer_context)
 {
     if (ParseHostPort(buffer_context) != 0)
@@ -182,6 +195,22 @@ void ConnectRemote(BufferContext* buffer_context)
         buffer_context->response_status = 400;
         return ;
     }
+    LOG_DEBUG("port:" << buffer_context->remote_port);
+    if (buffer_context->remote_port == 443)
+    {
+        // behave as tunnel
+        LOG_DEBUG("connect tunnel");
+        buffer_context->tunnel = true;
+        buffer_context->remote = bufferevent_socket_new(Service::get_base(), -1, BEV_OPT_CLOSE_ON_FREE);
+        bufferevent_setcb(buffer_context->remote, read_remote_tunnel_cb, NULL, event_remote_tunnel_cb, NULL);
+        bufferevent_enable(buffer_context->remote, EV_READ);
+        bufferevent_socket_connect_hostname(buffer_context->remote, Service::get_dnsbase(), AF_UNSPEC, 
+                buffer_context->remote_host.c_str(), buffer_context->remote_port);
+        AddRemoteBufferContext(buffer_context->remote, buffer_context);
+
+        return ;
+    }
+    LOG_DEBUG("here");
     buffer_context->remote = bufferevent_socket_new(Service::get_base(), -1, BEV_OPT_CLOSE_ON_FREE);
     buffer_context->http_response = new HttpResponse();
     bufferevent_setcb(buffer_context->remote, read_remote_cb, NULL, event_remote_cb, NULL);
