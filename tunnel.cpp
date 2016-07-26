@@ -31,17 +31,17 @@ void TunnelStart(RequestCtx* request_ctx)
     bufferevent_enable(tunnel_state->remote, EV_READ|EV_WRITE);
     bufferevent_socket_connect_hostname(tunnel_state->remote, request_ctx->http_service->dnsbase(), AF_UNSPEC, tunnel_state->host.c_str(), tunnel_state->port);
 
-    LOG_DEBUG("TunnelStart, connect to " << tunnel_state->host << ":" << tunnel_state->port);
+    LOG_INFO("TunnelStart, connect to " << tunnel_state->host << ":" << tunnel_state->port);
 }
 
 void TunnelRemoteEventCallback(struct bufferevent* bev, short events, void* arg)
 {
     TunnelState* tunnel_state = (TunnelState*)arg;
-    LOG_DEBUG("TunnelRemoteEventCallback");
+    LOG_INFO("TunnelRemoteEventCallback");
     if (events & BEV_EVENT_CONNECTED) 
     {
         LOG_INFO("create tunnel " << tunnel_state->host << ":" << tunnel_state->port << " OK");
-        LOG_DEBUG("reply established info to client");
+        LOG_INFO("reply established info to client");
         bufferevent_enable(tunnel_state->client, EV_READ|EV_WRITE);
         struct evbuffer* client_output = bufferevent_get_output(tunnel_state->client);
         evbuffer_add_printf(client_output, "HTTP/1.0 200 Connection established\r\n");
@@ -61,7 +61,7 @@ void TunnelRemoteEventCallback(struct bufferevent* bev, short events, void* arg)
         bufferevent_free(bev);
         evhttp_connection_free(tunnel_state->client_conn);
         delete tunnel_state;
-        LOG_DEBUG("free remote:" << bev << " delete tunnel_state:" << tunnel_state);
+        LOG_INFO("free remote:" << bev << " delete tunnel_state:" << tunnel_state);
     }
 }
 
