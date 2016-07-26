@@ -38,7 +38,13 @@ bool HttpService::Init()
             break;
         }
 
-        evhttp_set_allowed_methods(http_server_, EVHTTP_REQ_CONNECT);
+        evhttp_set_allowed_methods(http_server_, 
+            EVHTTP_REQ_CONNECT |
+            EVHTTP_REQ_GET |
+            EVHTTP_REQ_POST |
+            EVHTTP_REQ_HEAD |
+            EVHTTP_REQ_PUT |
+            EVHTTP_REQ_DELETE);
 
         if (evhttp_accept_socket(http_server_, sock_) != 0)
         {

@@ -32,7 +32,11 @@ void HttpGenericCallback(struct evhttp_request* request, void* arg)
 
     if (evhttp_request_get_command(request) == EVHTTP_REQ_CONNECT)
     {
-        return TunnelStart(request_ctx);
+        char* port = strchr(request_ctx->url, ':');
+        if (port && atoi(port + 1) == 443)
+        {
+            return TunnelStart(request_ctx);
+        }
     }
 
     StoreEntry* entry = SingletonCacheMgr::Instance().GetStoreEntry(request_ctx->url);
