@@ -5,6 +5,7 @@
 #include "http_reply.h"
 #include "http_send.h"
 #include "defines.h"
+#include "tunnel.h"
 
 #include <sys/queue.h>
 #include <event.h>
@@ -28,6 +29,11 @@ void HttpGenericCallback(struct evhttp_request* request, void* arg)
     evhttp_uri_join(request_ctx->uri, request_ctx->url, MAX_URL_SIZE);
 
     LOG_DEBUG("url:" << request_ctx->url << " command:" << evhttp_request_get_command(request));
+
+    if (evhttp_request_get_command(request) == EVHTTP_REQ_CONNECT)
+    {
+        return TunnelStart(request_ctx);
+    }
 
     StoreEntry* entry = SingletonCacheMgr::Instance().GetStoreEntry(request_ctx->url);
 
