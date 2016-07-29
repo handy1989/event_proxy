@@ -15,11 +15,12 @@ INCLUDE_DIRECTORIES(/opt/third_party/glog/include
     /opt/local/libevent-2.1.5/include
     /opt/third_party/boost/include)
 
-LINK_DIRECTORIES(/opt/third_party/glog/lib
+LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib
+    /opt/third_party/glog/lib
     /opt/local/libevent-2.1.5/lib
     /opt/third_party/boost/lib)
 
 LINK_LIBRARIES(glog event event_extra event_core event_pthreads
-    boost_thread boost_system pthread)
+    boost_thread boost_system boost_filesystem pthread hash)
 
 add_executable(proxy ${SOURCE})
