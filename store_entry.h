@@ -31,7 +31,7 @@ struct StoreClient
     }
 
     struct evhttp_request* request; 
-    unsigned int body_piece_index;
+    int body_piece_index;
     bool reply_header_done;
     int hit;
     int reply_body_size;
@@ -47,7 +47,7 @@ struct MemObj
 
     struct evkeyvalq* headers;
     std::vector<struct evbuffer*> bodies;
-    unsigned int body_piece_num;
+    int body_piece_num;
 };
 
 class StoreEntry

@@ -42,7 +42,7 @@ void ReplyClientBody2(StoreClient* client, StoreEntry* store_entry)
     struct evbuffer* output = bufferevent_get_output(bev);
 
     vector<struct evbuffer*>& bodies = store_entry->mem_obj_->bodies;
-    while (client->body_piece_index < bodies.size())
+    while (client->body_piece_index < (int)bodies.size())
     {   
         int len = evbuffer_get_length(bodies[client->body_piece_index]);
         evbuffer_add_buffer_reference(output, bodies[client->body_piece_index]);
@@ -58,7 +58,7 @@ void ReplyClientBody2(StoreClient* client, StoreEntry* store_entry)
 void ReplyClientBody(StoreClient* client, StoreEntry* store_entry)
 {
     vector<struct evbuffer*>& bodies = store_entry->mem_obj_->bodies;
-    while (client->body_piece_index < bodies.size())
+    while (client->body_piece_index < (int)bodies.size())
     {
         int len = evbuffer_get_length(bodies[client->body_piece_index]);
         char* buf = (char*)malloc(len);
@@ -103,6 +103,8 @@ void ReplyClient(RequestCtx* request_ctx)
     }
     else
     {
+        LOG_DEBUG("mem_obj header:" << mem_obj->headers << " client body_piece_index:" << store_client->body_piece_index
+                << " mem_obj body_size:" << mem_obj->bodies.size() << " mem_obj body_piece_num:" << mem_obj->body_piece_num);
         if (mem_obj->headers)
         {
             if (!store_client->reply_header_done)
@@ -113,11 +115,11 @@ void ReplyClient(RequestCtx* request_ctx)
                         << " now client_num:" << store_entry->GetClientNum());
             }
         }
-        if (store_client->body_piece_index < mem_obj->bodies.size())
+        if (store_client->body_piece_index < (int)mem_obj->bodies.size())
         {
             ReplyClientBody(store_client, store_entry);
         }
-        if (store_client->body_piece_index >= mem_obj->body_piece_num - 1)
+        if (mem_obj->body_piece_num >= 0 && store_client->body_piece_index >= mem_obj->body_piece_num - 1)
         {
             evhttp_send_reply_end(store_client->request);
             if (request_ctx->comm_timer)
