@@ -252,6 +252,9 @@ typedef void (dictScanFunction)(void *privdata, const dictEntry *de);
 #define dictIsRehashing(ht) ((ht)->rehashidx != -1)
 
 /* API */
+#ifdef __cplusplus
+extern "C" {
+#endif
 dict *dictCreate(dictType *type, void *privDataPtr);
 int dictExpand(dict *d, unsigned long size);
 int dictAdd(dict *d, void *key, void *val);
@@ -286,5 +289,9 @@ unsigned long dictScan(dict *d, unsigned long v, dictScanFunction *fn, void *pri
 extern dictType dictTypeHeapStringCopyKey;
 extern dictType dictTypeHeapStrings;
 extern dictType dictTypeHeapStringCopyKeyValue;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __DICT_H */

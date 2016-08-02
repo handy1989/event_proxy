@@ -1,6 +1,8 @@
 #ifndef HASH_TABLE_H_
 #define HASH_TABLE_H_
 
+#include "hash/dict.h"
+
 #include <stdint.h>
 
 enum HashKeyType
@@ -22,13 +24,18 @@ struct HashKey
 };
 
 
-unsigned int DictEncObjHash(const void *key);
+int DictEncObjKeyCompare(void *privdata, const void *key1, const void *key2);
+uint32_t DictEncObjHash(const void *key);
 
 class HashTable
 {
 public:
     HashTable();
     ~HashTable();
+
+    void* Get(HashKey* hash_key);
+    bool Add(HashKey* hash_key, void* val);
+    bool Delete(HashKey* hash_key);
 
 private:
     dict* dict_;
