@@ -1531,7 +1531,7 @@ void dictDisableResize(void) {
     dict_can_resize = 0;
 }
 
-#if 0
+#if 1
 
 /* The following is code that we don't use for Redis currently, but that is part
 of the library. */

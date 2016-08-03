@@ -27,7 +27,7 @@ int DictEncObjKeyCompare(void *privdata, const void *key1,
             return hash_key1->data.i64 == hash_key2->data.i64;
             break;
         case TYPE_CSTRING:
-            return strcmp((char*)hash_key1->data.ptr, (char*)hash_key2->data.ptr);
+            return strcmp((char*)hash_key1->data.ptr, (char*)hash_key2->data.ptr) == 0;
             break;
         default:
             return 0;

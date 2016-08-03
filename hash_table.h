@@ -37,6 +37,8 @@ public:
     bool Add(HashKey* hash_key, void* val);
     bool Delete(HashKey* hash_key);
 
+    void Stat() {dictPrintStats(dict_);}
+
 private:
     dict* dict_;
 };
