@@ -16,37 +16,41 @@ int main()
 {
     uint64_t begin = GetCurMilliseconds();
     HashTable* hash_table = new HashTable();
-    int count = 1024 * 1024;
-    int64_t total_key_size = 0;
-    int64_t total_value_size = 0;
+
+    int count = 10000000;
     for (int i = 0; i < count; ++i)
     {
-        HashKey* hash_key = new HashKey();
-        char* key = (char*)malloc(20);
-        char* value = (char*)malloc(20);
+        char key[16];
+        DiskEntry disk_entry;
         sprintf(key, "hello%08d", i);
-        sprintf(value, "world%08d", i);
-        hash_key->type = TYPE_CSTRING;
-        hash_key->data.ptr = (void*)key;
-        hash_table->Add(hash_key, value);
-        //printf("add key:%s value:%s\n", (char*)hash_key->data.ptr, value);
+        disk_entry.last_visit_time = i;
+
+        hash_table->Add((HashKey*)key, &disk_entry);
+        //printf("add disk_entry, key:%s last_visit_time:%d\n", key, disk_entry.last_visit_time);
     }
     uint64_t end = GetCurMilliseconds();
     printf("add %d items costs time %ld ms\n", count, end - begin);
     hash_table->Stat();
-    //begin = end;
-    //HashKey* hash_key = new HashKey();
-    //char* key = (char*)malloc(30);
-    //sprintf(key, "hello%08d", 0);
-    //hash_key->type = TYPE_CSTRING;
-    //hash_key->data.ptr = (void*)key;
-    //for (int i = 0; i < 1 * count; ++i)
-    //{
-    //    hash_table->Get(hash_key);
-    //}
-    //end = GetCurMilliseconds();
-    //printf("query %d items costs time %ld ms\n", count, end - begin);
-    //hash_table->Stat();
+    begin = end;
+
+    char key[16];
+    sprintf(key, "hello%08d", 0);
+    //hash_table->Delete((HashKey*)key);
+    printf("delete key:%s\n", key);
+    
+    DiskEntry val;
+    for (int i = 0; i < 1 * count; ++i)
+    {
+        char key[16];
+        sprintf(key, "hello%08d", i);
+        if (hash_table->Get((HashKey*)key, &val))
+        {
+            //printf("get disk_entry, key:%s last_visit_time:%d\n", key, val.last_visit_time);
+        }
+    }
+    end = GetCurMilliseconds();
+    printf("query %d items costs time %ld ms\n", count, end - begin);
+    hash_table->Stat();
 
     sleep(60);
     return 0;

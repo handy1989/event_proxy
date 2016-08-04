@@ -5,27 +5,12 @@
 
 #include <stdint.h>
 
-enum HashKeyType
-{
-    TYPE_INT,
-    TYPE_INT64,
-    TYPE_CSTRING
-};
+typedef unsigned char HashKey;
 
-struct HashKey
-{
-    HashKeyType type;
-    union
-    {
-        void* ptr;
-        int32_t i32;
-        int64_t i64;
-    } data;
-};
-
-
-int DictEncObjKeyCompare(void *privdata, const void *key1, const void *key2);
+int DictEncObjKeyCompare(void *privdata, const void *key1, void *key2);
 uint32_t DictEncObjHash(const void *key);
+void DictKeyDup(void* p, void *privdata, const void *key);
+void DictValDup(void* p, void *privdata, const void *obj);
 
 class HashTable
 {
@@ -33,7 +18,7 @@ public:
     HashTable();
     ~HashTable();
 
-    void* Get(HashKey* hash_key);
+    bool Get(HashKey* hash_key, void* val);
     bool Add(HashKey* hash_key, void* val);
     bool Delete(HashKey* hash_key);
 

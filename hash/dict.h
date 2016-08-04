@@ -58,19 +58,33 @@
 // 用这个宏来避免编译器错误
 #define DICT_NOTUSED(V) ((void) V)
 
+typedef struct DiskEntry
+{
+    uint8_t disk_type;
+    uint8_t level1;
+    uint8_t level2;
+    uint8_t visit_count;
+    uint32_t last_modified_time;
+    uint32_t last_visit_time;
+} DiskEntry;
+
 /*
  * 哈希表节点
  */
 typedef struct dictEntry {
     
     // 键
-    void *key;
+    union {
+        void* key;
+        unsigned char md[16];
+    };
 
     // 值
     union {
-        void *val;
+        void* val;
         uint64_t u64;
         int64_t s64;
+        struct DiskEntry disk_entry;
     } v;
 
     // 指向下个哈希表节点，形成链表
@@ -88,13 +102,13 @@ typedef struct dictType {
     unsigned int (*hashFunction)(const void *key);
 
     // 复制键的函数
-    void *(*keyDup)(void *privdata, const void *key);
+    void (*keyDup)(void* p, void *privdata, const void *key);
 
     // 复制值的函数
-    void *(*valDup)(void *privdata, const void *obj);
+    void (*valDup)(void* p, void *privdata, const void *obj);
 
     // 对比键的函数
-    int (*keyCompare)(void *privdata, const void *key1, const void *key2);
+    int (*keyCompare)(void *privdata, const void *key1, void *key2);
 
     // 销毁键的函数
     void (*keyDestructor)(void *privdata, void *key);
@@ -200,9 +214,17 @@ typedef void (dictScanFunction)(void *privdata, const dictEntry *de);
         (d)->type->valDestructor((d)->privdata, (entry)->v.val)
 
 // 设置给定字典节点的值
+/*
 #define dictSetVal(d, entry, _val_) do { \
     if ((d)->type->valDup) \
         entry->v.val = (d)->type->valDup((d)->privdata, _val_); \
+    else \
+        entry->v.val = (_val_); \
+} while(0)
+*/
+#define dictSetVal(d, entry, _val_) do { \
+    if ((d)->type->valDup) \
+        (d)->type->valDup(&entry->v.val, (d)->privdata, _val_); \
     else \
         entry->v.val = (_val_); \
 } while(0)
@@ -221,9 +243,18 @@ typedef void (dictScanFunction)(void *privdata, const dictEntry *de);
         (d)->type->keyDestructor((d)->privdata, (entry)->key)
 
 // 设置给定字典节点的键
+/*
 #define dictSetKey(d, entry, _key_) do { \
     if ((d)->type->keyDup) \
         entry->key = (d)->type->keyDup((d)->privdata, _key_); \
+    else \
+        entry->key = (_key_); \
+} while(0)
+*/
+
+#define dictSetKey(d, entry, _key_) do { \
+    if ((d)->type->keyDup) \
+        (d)->type->keyDup(&entry->key, (d)->privdata, _key_); \
     else \
         entry->key = (_key_); \
 } while(0)
@@ -232,7 +263,7 @@ typedef void (dictScanFunction)(void *privdata, const dictEntry *de);
 #define dictCompareKeys(d, key1, key2) \
     (((d)->type->keyCompare) ? \
         (d)->type->keyCompare((d)->privdata, key1, key2) : \
-        (key1) == (key2))
+        (key1) == (*key2))
 
 // 计算给定键的哈希值
 #define dictHashKey(d, key) (d)->type->hashFunction(key)

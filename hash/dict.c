@@ -398,7 +398,7 @@ int dictRehash(dict *d, int n) {
 
             /* Get the index in the new hash table */
             // 计算新哈希表的哈希值，以及节点插入的索引位置
-            h = dictHashKey(d, de->key) & d->ht[1].sizemask;
+            h = dictHashKey(d, &de->key) & d->ht[1].sizemask;
 
             // 插入节点到新哈希表
             de->next = d->ht[1].table[h];
@@ -679,7 +679,7 @@ static int dictGenericDelete(dict *d, const void *key, int nofree)
         // T = O(1)
         while(he) {
         
-            if (dictCompareKeys(d, key, he->key)) {
+            if (dictCompareKeys(d, key, &he->key)) {
                 // 超找目标节点
 
                 /* Unlink the element from the list */
@@ -839,7 +839,7 @@ dictEntry *dictFind(dict *d, const void *key)
         // T = O(1)
         while(he) {
 
-            if (dictCompareKeys(d, key, he->key))
+            if (dictCompareKeys(d, key, &he->key))
                 return he;
 
             he = he->next;
@@ -1483,7 +1483,7 @@ static int _dictKeyIndex(dict *d, const void *key)
         // T = O(1)
         he = d->ht[table].table[idx];
         while(he) {
-            if (dictCompareKeys(d, key, he->key))
+            if (dictCompareKeys(d, key, &he->key))
                 return -1;
             he = he->next;
         }
@@ -1598,7 +1598,7 @@ static unsigned int _dictStringCopyHTHashFunction(const void *key)
     return dictGenHashFunction(key, strlen(key));
 }
 
-static void *_dictStringDup(void *privdata, const void *key)
+static void *_dictStringDup(void* p, void *privdata, const void *key)
 {
     int len = strlen(key);
     char *copy = zmalloc(len+1);
@@ -1609,12 +1609,12 @@ static void *_dictStringDup(void *privdata, const void *key)
     return copy;
 }
 
-static int _dictStringCopyHTKeyCompare(void *privdata, const void *key1,
-        const void *key2)
+static int _dictStringCopyHTKeyCompare(void *privdata, const void **key1,
+        void **key2)
 {
     DICT_NOTUSED(privdata);
 
-    return strcmp(key1, key2) == 0;
+    return strcmp(*key1, *key2) == 0;
 }
 
 static void _dictStringDestructor(void *privdata, void *key)
