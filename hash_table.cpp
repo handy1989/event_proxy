@@ -15,7 +15,7 @@ dictType HashDictType = {
 void DictKeyDup(void* p, void* privdata, const void* key)
 {
     HashKey* hash_key = (HashKey*)p;
-    memcpy(hash_key, key, 16);
+    memcpy(hash_key, key, MD5_HASH_KEY_LEN);
 }
 
 void DictValDup(void* p, void* privdata, const void* obj)
@@ -27,11 +27,11 @@ void DictValDup(void* p, void* privdata, const void* obj)
 int DictEncObjKeyCompare(void *privdata, const void *key1,
         void *key2)
 {
-    return strncmp((char*)key1, (char*)key2, 16) == 0;
+    return strncmp((char*)key1, (char*)key2, MD5_HASH_KEY_LEN) == 0;
 }
 
 uint32_t DictEncObjHash(const void* hash_key) {
-    return dictGenHashFunction(hash_key, 16);
+    return dictGenHashFunction(hash_key, MD5_HASH_KEY_LEN);
 }
 
 HashTable::HashTable()

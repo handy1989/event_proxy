@@ -58,16 +58,6 @@
 // 用这个宏来避免编译器错误
 #define DICT_NOTUSED(V) ((void) V)
 
-typedef struct DiskEntry
-{
-    uint8_t disk_type;
-    uint8_t level1;
-    uint8_t level2;
-    uint8_t visit_count;
-    uint32_t last_modified_time;
-    uint32_t last_visit_time;
-} DiskEntry;
-
 /*
  * 哈希表节点
  */
@@ -76,7 +66,7 @@ typedef struct dictEntry {
     // 键
     union {
         void* key;
-        unsigned char md[16];
+        unsigned char key_raw[16];
     };
 
     // 值
@@ -84,7 +74,7 @@ typedef struct dictEntry {
         void* val;
         uint64_t u64;
         int64_t s64;
-        struct DiskEntry disk_entry;
+        unsigned char val_raw[16];
     } v;
 
     // 指向下个哈希表节点，形成链表

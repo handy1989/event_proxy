@@ -17,16 +17,16 @@ int main()
     uint64_t begin = GetCurMilliseconds();
     HashTable* hash_table = new HashTable();
 
-    int count = 10000000;
+    int count = 10;
     for (int i = 0; i < count; ++i)
     {
         char key[16];
-        DiskEntry disk_entry;
+        HashValue hash_value;
         sprintf(key, "hello%08d", i);
-        disk_entry.last_visit_time = i;
+        hash_value.last_visit_time = i;
 
-        hash_table->Add((HashKey*)key, &disk_entry);
-        //printf("add disk_entry, key:%s last_visit_time:%d\n", key, disk_entry.last_visit_time);
+        hash_table->Add((HashKey*)key, &hash_value);
+        printf("add hash_value, key:%s last_visit_time:%d\n", key, hash_value.last_visit_time);
     }
     uint64_t end = GetCurMilliseconds();
     printf("add %d items costs time %ld ms\n", count, end - begin);
@@ -35,17 +35,17 @@ int main()
 
     char key[16];
     sprintf(key, "hello%08d", 0);
-    //hash_table->Delete((HashKey*)key);
+    hash_table->Delete((HashKey*)key);
     printf("delete key:%s\n", key);
     
-    DiskEntry val;
+    HashValue val;
     for (int i = 0; i < 1 * count; ++i)
     {
         char key[16];
         sprintf(key, "hello%08d", i);
         if (hash_table->Get((HashKey*)key, &val))
         {
-            //printf("get disk_entry, key:%s last_visit_time:%d\n", key, val.last_visit_time);
+            printf("get hash_value, key:%s last_visit_time:%d\n", key, val.last_visit_time);
         }
     }
     end = GetCurMilliseconds();
